@@ -14,8 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import android.app.Activity
+import android.net.VpnService
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.netflow.predict.data.model.*
@@ -42,6 +47,27 @@ fun HomeScreen(
     val isLoading    by viewModel.isLoading.collectAsState()
     var showStopDialog by remember { mutableStateOf(false) }
     val snackbarHost   = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    // VPN permission launcher: asks the OS for VPN consent, then starts VPN on success
+    val vpnPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.startVpn()
+        }
+    }
+
+    val requestVpnStart: () -> Unit = {
+        val prepareIntent = VpnService.prepare(context)
+        if (prepareIntent != null) {
+            // User hasn't granted VPN permission yet — show system dialog
+            vpnPermissionLauncher.launch(prepareIntent)
+        } else {
+            // Permission already granted — start immediately
+            viewModel.startVpn()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -92,7 +118,7 @@ fun HomeScreen(
             // ── Protection status card ────────────────────────────────────────
             ProtectionCard(
                 vpnState       = vpnState,
-                onToggleOn     = { viewModel.startVpn() },
+                onToggleOn     = requestVpnStart,
                 onToggleOff    = { showStopDialog = true }
             )
 
