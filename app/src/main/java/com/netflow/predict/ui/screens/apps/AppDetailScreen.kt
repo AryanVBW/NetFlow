@@ -55,16 +55,23 @@ class AppDetailViewModel @Inject constructor(
 
     fun updateStatus(pkg: String, status: AppMonitorStatus) {
         _app.value = _app.value?.copy(monitorStatus = status)
+        viewModelScope.launch {
+            trafficRepo.updateAppMonitorStatus(pkg, status)
+        }
     }
 
     fun updateRules(rules: AppRules) {
+        val pkg = _app.value?.packageName ?: return
         _app.value = _app.value?.copy(rules = rules)
+        viewModelScope.launch {
+            trafficRepo.updateAppRules(pkg, rules)
+        }
     }
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppDetailScreen(
     packageName: String,

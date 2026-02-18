@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.netflow.predict.data.model.*
+import com.netflow.predict.data.repository.SettingsRepository
 import com.netflow.predict.data.repository.TrafficRepository
 import com.netflow.predict.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,39 +32,40 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    private val settingsRepo: SettingsRepository,
     private val trafficRepo: TrafficRepository
 ) : ViewModel() {
 
-    private val _settings = MutableStateFlow(AppSettings())
-    val settings: StateFlow<AppSettings> = _settings
+    val settings: StateFlow<AppSettings> = settingsRepo.settings
+        .stateIn(viewModelScope, SharingStarted.Lazily, AppSettings())
 
     fun setTheme(mode: ThemeMode) {
-        _settings.value = _settings.value.copy(themeMode = mode)
+        viewModelScope.launch { settingsRepo.setTheme(mode) }
     }
 
     fun setRetentionDays(days: Int) {
-        _settings.value = _settings.value.copy(retentionDays = days)
+        viewModelScope.launch { settingsRepo.setRetentionDays(days) }
     }
 
     fun setDnsOnlyMode(enabled: Boolean) {
-        _settings.value = _settings.value.copy(dnsOnlyMode = enabled)
+        viewModelScope.launch { settingsRepo.setDnsOnlyMode(enabled) }
     }
 
     fun setAiEnabled(enabled: Boolean) {
-        _settings.value = _settings.value.copy(aiEnabled = enabled)
+        viewModelScope.launch { settingsRepo.setAiEnabled(enabled) }
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {
-        _settings.value = _settings.value.copy(notificationsEnabled = enabled)
+        viewModelScope.launch { settingsRepo.setNotificationsEnabled(enabled) }
     }
 
     fun setDeveloperMode(enabled: Boolean) {
-        _settings.value = _settings.value.copy(developerMode = enabled)
+        viewModelScope.launch { settingsRepo.setDeveloperMode(enabled) }
     }
 
     fun clearLogs() {
         viewModelScope.launch {
-            // stub: in real impl clears Room database
+            trafficRepo.clearAllData()
         }
     }
 }

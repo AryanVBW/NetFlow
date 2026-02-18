@@ -26,7 +26,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.random.Random
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
@@ -44,35 +43,62 @@ class ConnectionDetailViewModel @Inject constructor(
     private val _isTrusted = MutableStateFlow(false)
     val isTrusted: StateFlow<Boolean> = _isTrusted
 
+    private var loadedDomainName: String = ""
+
     fun load(flowId: String, domainName: String, appPackage: String) {
+        loadedDomainName = domainName
         viewModelScope.launch {
-            trafficRepo.getAppDomains(appPackage).collect { domains ->
-                val found = domains.firstOrNull { it.domain == domainName }
-                _domain.value = found ?: DomainInfo(
-                    domain             = domainName,
-                    ipAddress          = "157.${Random.nextInt(0, 255)}.${Random.nextInt(0, 255)}.1",
-                    port               = 443,
-                    category           = DomainCategory.UNKNOWN,
-                    riskLevel          = RiskLevel.UNKNOWN,
-                    requestCount       = Random.nextInt(1, 200),
-                    totalBytesSent     = Random.nextLong(1_000, 1_000_000),
-                    totalBytesReceived = Random.nextLong(1_000, 5_000_000),
-                    firstSeen          = System.currentTimeMillis() - 7_200_000L,
-                    lastSeen           = System.currentTimeMillis() - 30_000L,
-                    geoCountry         = "United States",
-                    geoRegion          = "Virginia",
-                    asn                = "AS15169",
-                    asnOrg             = "Google LLC",
-                    securityAssessment = "No classification available for this domain."
-                )
-                _isBlocked.value = _domain.value?.isBlocked ?: false
-                _isTrusted.value = _domain.value?.isTrusted ?: false
+            // First try domain-level lookup (across all apps)
+            trafficRepo.getDomainInfo(domainName).collect { domainInfo ->
+                if (domainInfo != null) {
+                    _domain.value = domainInfo
+                    _isBlocked.value = domainInfo.isBlocked
+                    _isTrusted.value = domainInfo.isTrusted
+                } else {
+                    // Fallback: try app-specific domain list
+                    trafficRepo.getAppDomains(appPackage).first().let { domains ->
+                        val found = domains.firstOrNull { it.domain == domainName }
+                        if (found != null) {
+                            _domain.value = found
+                            _isBlocked.value = found.isBlocked
+                            _isTrusted.value = found.isTrusted
+                        } else {
+                            // Domain not in DB yet — create a minimal placeholder
+                            _domain.value = DomainInfo(
+                                domain             = domainName,
+                                ipAddress          = "",
+                                port               = 443,
+                                category           = DomainCategory.UNKNOWN,
+                                riskLevel          = RiskLevel.UNKNOWN,
+                                requestCount       = 0,
+                                totalBytesSent     = 0L,
+                                totalBytesReceived = 0L,
+                                firstSeen          = System.currentTimeMillis(),
+                                lastSeen           = System.currentTimeMillis(),
+                                securityAssessment = "No data available for this domain yet."
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 
-    fun toggleBlock() { _isBlocked.value = !_isBlocked.value }
-    fun toggleTrust() { _isTrusted.value = !_isTrusted.value }
+    fun toggleBlock() {
+        val newBlocked = !_isBlocked.value
+        _isBlocked.value = newBlocked
+        viewModelScope.launch {
+            trafficRepo.setDomainBlocked(loadedDomainName, newBlocked)
+        }
+    }
+
+    fun toggleTrust() {
+        val newTrusted = !_isTrusted.value
+        _isTrusted.value = newTrusted
+        viewModelScope.launch {
+            trafficRepo.setDomainTrusted(loadedDomainName, newTrusted)
+        }
+    }
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -455,7 +481,7 @@ private fun ActionButtonsRow(
             OutlinedButton(
                 onClick  = onTrust,
                 modifier = Modifier.weight(1f),
-                colors   = OutlinedButtonDefaults.outlinedButtonColors(
+                colors   = ButtonDefaults.outlinedButtonColors(
                     contentColor = if (isTrusted) Tertiary else MaterialTheme.colorScheme.onSurface
                 ),
                 border = BorderStroke(
@@ -476,7 +502,7 @@ private fun ActionButtonsRow(
             OutlinedButton(
                 onClick  = onReport,
                 modifier = Modifier.weight(1f),
-                colors   = OutlinedButtonDefaults.outlinedButtonColors(
+                colors   = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {

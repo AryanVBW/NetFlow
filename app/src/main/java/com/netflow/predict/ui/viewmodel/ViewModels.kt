@@ -30,15 +30,17 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            delay(1200) // simulate initial load
-            trafficRepo.getTrafficSummary().collect { _trafficSummary.value = it }
+            trafficRepo.getTrafficSummary().collect {
+                _trafficSummary.value = it
+                _isLoading.value = false
+            }
         }
         viewModelScope.launch {
-            delay(1500)
             trafficRepo.getPrediction().collect { _prediction.value = it }
         }
+        // Timeout fallback: if data hasn't loaded after 3s, stop showing loading
         viewModelScope.launch {
-            delay(1200)
+            delay(3000)
             _isLoading.value = false
         }
     }
