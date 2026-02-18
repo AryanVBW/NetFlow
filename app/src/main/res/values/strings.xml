@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">NetFlow Predict</string>
+    <string name="tagline">See every connection. Predict every risk.</string>
+</resources>
