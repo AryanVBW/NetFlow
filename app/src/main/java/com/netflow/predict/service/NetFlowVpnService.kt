@@ -7,30 +7,57 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.netflow.predict.MainActivity
-import com.netflow.predict.R
+import com.netflow.predict.data.local.dao.*
+import com.netflow.predict.engine.AppResolver
+import com.netflow.predict.engine.FlowTracker
+import com.netflow.predict.engine.VpnPacketLoop
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.*
+import javax.inject.Inject
 
 /**
- * Stub VPN service.
+ * Real VPN capture service.
  *
- * This foreground service holds the VPN tunnel interface open.
- * In the real implementation this is where packets are read from
- * [tunFd] via a background thread / coroutine, parsed, classified,
- * and forwarded through a real (or loopback) socket while being
- * stored in the Room database.
+ * This foreground service manages the VPN tunnel interface and runs the
+ * packet processing loop that captures, parses, and logs all device traffic.
+ *
+ * The service uses Hilt injection to access the Room DAOs and writes
+ * captured data to the local database for the UI and prediction engine.
  */
+@AndroidEntryPoint
 class NetFlowVpnService : VpnService() {
 
     companion object {
         const val ACTION_START = "com.netflow.predict.START_VPN"
         const val ACTION_STOP  = "com.netflow.predict.STOP_VPN"
 
+        private const val TAG = "NetFlowVpnService"
         private const val NOTIFICATION_ID      = 1001
         private const val NOTIFICATION_CHANNEL = "netflow_vpn"
+
+        /** Shared reference so VpnRepository can access the flow tracker */
+        @Volatile
+        var activeFlowTracker: FlowTracker? = null
+            private set
+
+        @Volatile
+        var isRunning: Boolean = false
+            private set
     }
 
+    @Inject lateinit var connectionDao: ConnectionDao
+    @Inject lateinit var dnsQueryDao: DnsQueryDao
+    @Inject lateinit var appDao: AppDao
+    @Inject lateinit var domainDao: DomainDao
+
     private var tunFd: ParcelFileDescriptor? = null
+    private var serviceScope: CoroutineScope? = null
+    private var packetLoop: VpnPacketLoop? = null
+    private var flowTracker: FlowTracker? = null
+    private var appResolver: AppResolver? = null
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -59,6 +86,7 @@ class NetFlowVpnService : VpnService() {
     }
 
     override fun onRevoke() {
+        // User revoked VPN permission from system settings
         stopVpn()
     }
 
@@ -68,34 +96,95 @@ class NetFlowVpnService : VpnService() {
         try {
             tunFd?.close()
 
+            // Initialize the app resolver and preload the package cache
+            appResolver = AppResolver(this).also { it.preloadCache() }
+
+            // Initialize the flow tracker with real DAOs
+            flowTracker = FlowTracker(
+                connectionDao = connectionDao,
+                dnsQueryDao = dnsQueryDao,
+                appDao = appDao,
+                domainDao = domainDao,
+                appResolver = appResolver!!
+            )
+            activeFlowTracker = flowTracker
+
+            // Build the VPN interface
             val builder = Builder()
                 .setSession("NetFlow Predict")
-                .addAddress("10.0.0.2", 32)          // virtual client address
+                .addAddress("10.0.0.2", 32)
+                .addRoute("0.0.0.0", 0)
                 .addDnsServer("8.8.8.8")
-                .addRoute("0.0.0.0", 0)               // route all IPv4 traffic
+                .addDnsServer("8.8.4.4")
                 .setMtu(1500)
-                .setBlocking(false)
+                .setBlocking(true) // blocking mode for the read loop
+
+            // Exclude our own app from VPN to prevent loopback
+            try {
+                builder.addDisallowedApplication(packageName)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not exclude self from VPN", e)
+            }
 
             tunFd = builder.establish()
 
-            // TODO: Start packet-capture loop here.
-            //   val fd = tunFd!!.fileDescriptor
-            //   while (isActive) {
-            //       val bytesRead = Os.read(fd, packetBuffer, 0, bufferSize)
-            //       if (bytesRead > 0) parseAndForward(packetBuffer, bytesRead)
-            //   }
+            if (tunFd == null) {
+                Log.e(TAG, "Failed to establish VPN tunnel — user may not have granted permission")
+                stopSelf()
+                return
+            }
+
+            isRunning = true
+            Log.i(TAG, "VPN tunnel established")
+
+            // Start coroutine scope for the packet loop
+            serviceScope = CoroutineScope(
+                SupervisorJob() + Dispatchers.IO + CoroutineName("VpnServiceScope")
+            )
+
+            // Start the flow tracker (periodic flush to DB)
+            flowTracker!!.start(serviceScope!!)
+
+            // Start the packet processing loop
+            packetLoop = VpnPacketLoop(tunFd!!, flowTracker!!, appResolver!!)
+            serviceScope!!.launch {
+                packetLoop!!.run()
+            }
+
+            // Update notification to show active state
+            updateNotification("Monitoring — capturing traffic")
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to start VPN", e)
             stopSelf()
         }
     }
 
     private fun stopVpn() {
+        Log.i(TAG, "Stopping VPN")
+        isRunning = false
+        activeFlowTracker = null
+
+        // Stop the packet loop
+        packetLoop?.stop()
+        packetLoop = null
+
+        // Stop the flow tracker (triggers final DB flush)
+        flowTracker?.stop()
+        flowTracker = null
+
+        // Cancel the coroutine scope
+        serviceScope?.cancel()
+        serviceScope = null
+
+        // Close the TUN file descriptor
         try {
             tunFd?.close()
         } catch (_: Exception) {}
         tunFd = null
+
+        appResolver = null
+
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -115,7 +204,7 @@ class NetFlowVpnService : VpnService() {
             .createNotificationChannel(channel)
     }
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(contentText: String = "Monitoring network traffic"): Notification {
         val openIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java),
@@ -128,13 +217,18 @@ class NetFlowVpnService : VpnService() {
         )
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_lock_lock)  // replace with custom icon
+            .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setContentTitle("NetFlow Predict")
-            .setContentText("Monitoring network traffic")
+            .setContentText(contentText)
             .setContentIntent(openIntent)
             .addAction(android.R.drawable.ic_media_pause, "Stop", stopIntent)
             .setOngoing(true)
             .setShowWhen(false)
             .build()
+    }
+
+    private fun updateNotification(contentText: String) {
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.notify(NOTIFICATION_ID, buildNotification(contentText))
     }
 }
