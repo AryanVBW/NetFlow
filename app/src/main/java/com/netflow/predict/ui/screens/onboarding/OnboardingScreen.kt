@@ -60,7 +60,6 @@ private val slides = listOf(
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(
     onSetupProtection: () -> Unit,

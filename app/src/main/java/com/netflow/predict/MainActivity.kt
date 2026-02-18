@@ -23,13 +23,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NetFlowApp()
+            NetFlowAppContent()
         }
     }
 }
 
 @Composable
-private fun NetFlowApp() {
+private fun NetFlowAppContent() {
     NetFlowTheme {
         val navController = rememberNavController()
         AppNavigation(navController = navController)

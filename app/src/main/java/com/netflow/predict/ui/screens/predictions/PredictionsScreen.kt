@@ -22,11 +22,12 @@ import com.netflow.predict.data.model.*
 import com.netflow.predict.ui.components.*
 import com.netflow.predict.ui.theme.*
 import com.netflow.predict.ui.viewmodel.PredictionsViewModel
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PredictionsScreen(
     onBack: () -> Unit,
