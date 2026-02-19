@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NetFlowPredict"
+rootProject.name = "NetFlow"
 include(":app")

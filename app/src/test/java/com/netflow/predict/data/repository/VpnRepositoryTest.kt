@@ -1,6 +1,9 @@
 package com.netflow.predict.data.repository
 
+import android.content.Context
 import com.netflow.predict.data.model.VpnStatus
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -8,10 +11,15 @@ import org.junit.Test
 class VpnRepositoryTest {
 
     private lateinit var repo: VpnRepository
+    private lateinit var context: Context
 
     @Before
     fun setUp() {
-        repo = VpnRepository()
+        context = mockk(relaxed = true)
+        every { context.startForegroundService(any()) } returns null
+        every { context.startService(any()) } returns null
+
+        repo = VpnRepository(context)
     }
 
     @Test
@@ -22,9 +30,10 @@ class VpnRepositoryTest {
     }
 
     @Test
-    fun `startVpn sets status to connected`() {
+    fun `startVpn sets status to reconnecting`() {
         repo.startVpn()
-        assertEquals(VpnStatus.CONNECTED, repo.vpnState.value.status)
+        // startVpn sets RECONNECTING; the init poller will set CONNECTED once isRunning is true
+        assertEquals(VpnStatus.RECONNECTING, repo.vpnState.value.status)
     }
 
     @Test
@@ -42,10 +51,10 @@ class VpnRepositoryTest {
     }
 
     @Test
-    fun `startVpn after stop transitions back to connected`() {
+    fun `startVpn after stop transitions back to reconnecting`() {
         repo.startVpn()
         repo.stopVpn()
         repo.startVpn()
-        assertEquals(VpnStatus.CONNECTED, repo.vpnState.value.status)
+        assertEquals(VpnStatus.RECONNECTING, repo.vpnState.value.status)
     }
 }

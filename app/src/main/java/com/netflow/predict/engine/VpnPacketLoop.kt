@@ -1,21 +1,14 @@
 package com.netflow.predict.engine
 
 import android.os.ParcelFileDescriptor
-import android.system.Os
-import android.system.OsConstants
-import android.system.StructPollfd
 import android.util.Log
 import kotlinx.coroutines.*
-import java.io.FileDescriptor
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
-import java.net.InetSocketAddress
 import java.nio.ByteBuffer
-import java.nio.channels.DatagramChannel
-import java.nio.channels.SocketChannel
 
 /**
  * Core VPN packet processing loop.
@@ -250,47 +243,26 @@ class VpnPacketLoop(
     /**
      * Forward a non-DNS packet to the real network.
      *
-     * For v1, we simply write the packet back out the TUN interface
-     * which allows it to pass through. The VPN captures and logs it,
-     * but the actual forwarding is handled by Android's VPN framework
-     * when we set up the routes correctly.
+     * In v1, we operate in monitor-only mode: DNS queries are intercepted,
+     * parsed, and forwarded via real sockets (see handleDnsPacket). All other
+     * traffic (TCP/UDP) is tracked for flow analysis but NOT written back
+     * to the TUN fd — doing so would cause an infinite packet loop since
+     * the TUN captures all outbound traffic via addRoute("0.0.0.0", 0).
      *
-     * Note: The TUN interface with addRoute("0.0.0.0", 0) captures all traffic.
-     * We need to actually relay packets by opening real sockets. For a simplified
-     * approach, we let the packets flow naturally by writing them back, which
-     * won't work for TCP (needs proper state tracking). 
-     *
-     * The practical approach for v1: only do DNS interception for domain resolution,
-     * and use TrafficStats API for per-app byte counting. TCP connections proceed
-     * normally through the TUN — the VPN framework handles forwarding.
+     * A full userspace TCP/UDP relay (reading from TUN, opening protected
+     * real sockets, and writing responses back) is planned for v2.
+     * For now, the flow tracking and DNS interception provide the core value.
      */
+    @Suppress("UNUSED_PARAMETER")
     private fun forwardPacket(
         buffer: ByteBuffer,
         length: Int,
         packet: PacketParser.ParsedPacket,
         isOutbound: Boolean
     ) {
-        // In the current architecture, the VPN is set up with addRoute("0.0.0.0", 0)
-        // which means ALL traffic goes through the TUN. We must forward packets
-        // back out to the real network.
-        //
-        // For TCP, we write the raw packet back to the TUN fd. The Android VPN
-        // framework in combination with our routing config handles the actual
-        // network I/O. The key insight is that we read from TUN, parse/log, 
-        // and then need to send to the real interface.
-        //
-        // This is done by the VpnService.protect() mechanism on real sockets.
-        // Since implementing a full userspace TCP stack is complex, for v1 we
-        // simply pass the packet through (write it back). The flow tracking
-        // and DNS interception still provide valuable data.
-        
-        if (!isOutbound) return // responses are already handled
-        
-        try {
-            tunOutput?.write(buffer.array(), 0, length)
-        } catch (e: Exception) {
-            // Packet drop is acceptable
-        }
+        // No-op in v1: packets are tracked but not relayed.
+        // Writing raw IP packets back to the TUN fd would re-trigger
+        // processPacket() and create an infinite loop.
     }
 
     private fun isOutboundPacket(packet: PacketParser.ParsedPacket): Boolean {

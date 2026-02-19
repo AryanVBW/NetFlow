@@ -126,7 +126,7 @@ fun PermissionsScreen(
                     icon        = Icons.Filled.VpnKey,
                     title       = "VPN Access",
                     isRequired  = true,
-                    description = "Lets NetFlow Predict analyze traffic locally. No data leaves your device.",
+                    description = "Lets NetFlow analyze traffic locally. No data leaves your device.",
                     state       = vpnState,
                     onGrant     = { showVpnSheet = true }
                 )
@@ -344,7 +344,7 @@ private fun VpnExplanationSheet(
                 .padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Why does NetFlow Predict need VPN access?",
+            Text("Why does NetFlow need VPN access?",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground)
             Text(

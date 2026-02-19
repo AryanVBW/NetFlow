@@ -109,9 +109,10 @@ fun AppDetailScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
 
             // ── App header ────────────────────────────────────────────────────
-            if (app != null) {
+            val currentApp = app
+            if (currentApp != null) {
                 AppDetailHeader(
-                    app            = app!!,
+                    app            = currentApp,
                     onStatusChange = { status ->
                         if (status == AppMonitorStatus.BLOCKED) showBlockDialog = true
                         else viewModel.updateStatus(packageName, status)
@@ -241,7 +242,7 @@ private fun AppDetailHeader(
                     expanded        = menuExpanded,
                     onDismissRequest = { menuExpanded = false }
                 ) {
-                    AppMonitorStatus.values().forEach { s ->
+                    AppMonitorStatus.entries.forEach { s ->
                         DropdownMenuItem(
                             text    = { Text(s.name.lowercase().replaceFirstChar { it.uppercase() }) },
                             onClick = { onStatusChange(s); menuExpanded = false }

@@ -83,7 +83,7 @@ fun AppsScreen(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AppSortMode.values().forEach { mode ->
+                AppSortMode.entries.forEach { mode ->
                     FilterChip(
                         selected = sortMode == mode,
                         onClick  = { viewModel.setSort(mode) },
@@ -183,7 +183,7 @@ private fun EmptyAppsState() {
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground)
         Spacer(Modifier.height(8.dp))
-        Text("Once NetFlow Predict starts monitoring, apps will appear here.",
+        Text("Once NetFlow starts monitoring, apps will appear here.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface)
     }

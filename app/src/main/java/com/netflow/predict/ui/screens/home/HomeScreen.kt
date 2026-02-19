@@ -73,7 +73,7 @@ fun HomeScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text("NetFlow Predict",
+                    Text("NetFlow",
                         style = MaterialTheme.typography.titleLarge)
                 },
                 navigationIcon = {

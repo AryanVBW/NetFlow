@@ -35,7 +35,7 @@ private val slides = listOf(
     OnboardingSlide(
         icon        = Icons.Filled.Wifi,
         headline    = "See all network activity on your phone.",
-        body        = "NetFlow Predict monitors every connection — from social apps to background services — so nothing happens without your knowledge.",
+        body        = "NetFlow monitors every connection — from social apps to background services — so nothing happens without your knowledge.",
         accentColor = Primary
     ),
     OnboardingSlide(
@@ -47,7 +47,7 @@ private val slides = listOf(
     OnboardingSlide(
         icon        = Icons.Filled.Lock,
         headline    = "Your data never leaves your device.",
-        body        = "All traffic analysis and AI predictions run entirely on-device. NetFlow Predict never uploads your connection data to any server. Ever.",
+        body        = "All traffic analysis and AI predictions run entirely on-device. NetFlow never uploads your connection data to any server. Ever.",
         accentColor = Tertiary
     ),
     OnboardingSlide(
@@ -267,7 +267,7 @@ private fun BasicModeSheet(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                "Without VPN access, NetFlow Predict cannot monitor live traffic or make real-time predictions. You can enable full protection at any time in Settings.",
+                "Without VPN access, NetFlow cannot monitor live traffic or make real-time predictions. You can enable full protection at any time in Settings.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

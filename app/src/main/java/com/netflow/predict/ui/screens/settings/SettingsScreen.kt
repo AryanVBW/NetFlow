@@ -250,7 +250,7 @@ fun SettingsScreen(
             title = { Text("Choose theme") },
             text  = {
                 Column {
-                    ThemeMode.values().forEach { mode ->
+                    ThemeMode.entries.forEach { mode ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -381,7 +381,7 @@ private fun ExportLogsSheet(onDismiss: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface)
 
-            ExportFormat.values().forEach { format ->
+            ExportFormat.entries.forEach { format ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

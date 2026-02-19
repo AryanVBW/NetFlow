@@ -188,13 +188,16 @@ class FlowTracker(
         return isDomainBlocked(domain)
     }
 
-    /** Flush active flows to database in a single transaction */
+    /** Flush active flows to database, inserting only new (unflushed) flows */
     private suspend fun flushToDB() {
         if (flowTable.isEmpty()) return
 
         try {
             val now = System.currentTimeMillis()
-            val toFlush = flowTable.values.toList()
+            // Only flush flows that haven't been written to DB yet
+            val toFlush = flowTable.values.filter { !it.flushed }
+
+            if (toFlush.isEmpty()) return
 
             for (flow in toFlush) {
                 // Resolve app ID if not done yet
@@ -212,7 +215,7 @@ class FlowTracker(
                 }
             }
 
-            // Batch insert connections
+            // Batch insert only new connections
             val connections = toFlush
                 .filter { it.appId > 0 }
                 .map { flow ->
@@ -235,6 +238,8 @@ class FlowTracker(
 
             if (connections.isNotEmpty()) {
                 connectionDao.insertAll(connections)
+                // Mark all flushed flows so they aren't re-inserted
+                toFlush.forEach { it.flushed = true }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to flush flows to DB", e)

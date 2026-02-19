@@ -97,21 +97,23 @@ class NetFlowVpnService : VpnService() {
             tunFd?.close()
 
             // Initialize the app resolver and preload the package cache
-            appResolver = AppResolver(this).also { it.preloadCache() }
+            val resolver = AppResolver(this).also { it.preloadCache() }
+            appResolver = resolver
 
             // Initialize the flow tracker with real DAOs
-            flowTracker = FlowTracker(
+            val tracker = FlowTracker(
                 connectionDao = connectionDao,
                 dnsQueryDao = dnsQueryDao,
                 appDao = appDao,
                 domainDao = domainDao,
-                appResolver = appResolver!!
+                appResolver = resolver
             )
-            activeFlowTracker = flowTracker
+            flowTracker = tracker
+            activeFlowTracker = tracker
 
             // Build the VPN interface
             val builder = Builder()
-                .setSession("NetFlow Predict")
+                .setSession("NetFlow")
                 .addAddress("10.0.0.2", 32)
                 .addRoute("0.0.0.0", 0)
                 .addDnsServer("8.8.8.8")
@@ -143,12 +145,15 @@ class NetFlowVpnService : VpnService() {
             )
 
             // Start the flow tracker (periodic flush to DB)
-            flowTracker!!.start(serviceScope!!)
+            val scope = serviceScope ?: return
+            tracker.start(scope)
 
             // Start the packet processing loop
-            packetLoop = VpnPacketLoop(tunFd!!, flowTracker!!, appResolver!!)
-            serviceScope!!.launch {
-                packetLoop!!.run()
+            val fd = tunFd ?: return
+            val loop = VpnPacketLoop(fd, tracker, resolver)
+            packetLoop = loop
+            scope.launch {
+                loop.run()
             }
 
             // Update notification to show active state
@@ -218,7 +223,7 @@ class NetFlowVpnService : VpnService() {
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_lock)
-            .setContentTitle("NetFlow Predict")
+            .setContentTitle("NetFlow")
             .setContentText(contentText)
             .setContentIntent(openIntent)
             .addAction(android.R.drawable.ic_media_pause, "Stop", stopIntent)

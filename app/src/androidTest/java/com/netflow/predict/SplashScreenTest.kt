@@ -36,7 +36,7 @@ class SplashScreenTest {
         }
 
         composeTestRule
-            .onNodeWithText("NetFlow Predict")
+            .onNodeWithText("NetFlow")
             .assertIsDisplayed()
     }
 

@@ -7,52 +7,46 @@ Guidelines for agentic coding agents working in this repository.
 ## Project Overview
 
 **NetFlow Predict** is a privacy-first Android network monitor with on-device AI traffic
-prediction. Stack: Kotlin · Jetpack Compose · Material 3 · Hilt · Room · Kotlin Coroutines/Flow.
+prediction. It captures real device traffic via a local VPN (TUN interface), logs DNS queries,
+tracks per-app connections, aggregates stats into a Room database, and runs periodic risk analysis.
 
 - Package: `com.netflow.predict`
 - Min SDK 26 · Target/Compile SDK 35 · Java 17 · Kotlin 2.0.21
 - Build system: Gradle 8.7 with Kotlin DSL (`*.gradle.kts`) and Version Catalog (`gradle/libs.versions.toml`)
-- DI: Hilt (KSP, **not** KAPT)
+- DI: Hilt with **KSP** (never KAPT)
+- Single `:app` module, single-activity architecture
 
 ---
 
-## Build Commands
+## Build / Lint / Test Commands
 
-All commands must be run from the repo root: `/Volumes/DATA_vivek/GITHUB/NetFlow ` (note the trailing space — always quote the path).
+Run all commands from the repo root.
 
 ```bash
-# Assemble debug APK
+# Debug build
 ./gradlew :app:assembleDebug
 
-# Assemble release APK (minification enabled)
+# Release build (R8 minification enabled)
 ./gradlew :app:assembleRelease
 
-# Run all unit tests
+# All unit tests
 ./gradlew :app:testDebugUnitTest
 
-# Run a single test class
-./gradlew :app:testDebugUnitTest --tests "com.netflow.predict.ExampleUnitTest"
+# Single test class
+./gradlew :app:testDebugUnitTest --tests "com.netflow.predict.ui.viewmodel.HomeViewModelTest"
 
-# Run a single test method
-./gradlew :app:testDebugUnitTest --tests "com.netflow.predict.ExampleUnitTest.addition_isCorrect"
+# Single test method
+./gradlew :app:testDebugUnitTest --tests "com.netflow.predict.ui.viewmodel.HomeViewModelTest.initial vpn state is disconnected"
 
-# Run instrumented (on-device) tests
+# Instrumented tests (requires running emulator/device)
 ./gradlew :app:connectedDebugAndroidTest
 
-# Run Android Lint
+# Android Lint (report: app/build/reports/lint-results-debug.html)
 ./gradlew :app:lintDebug
-# Lint report written to: app/build/reports/lint-results-debug.html
 
-# Check for dependency updates (if version-catalog plugin added later)
-./gradlew dependencyUpdates
-
-# Clean build
+# Clean
 ./gradlew clean
 ```
-
-> There is currently no `gradlew` shell script in the repo — generate it by running
-> `gradle wrapper --gradle-version 8.7` once, or copy a standard wrapper from another project.
-> The `gradle/wrapper/gradle-wrapper.properties` file is already present and points to Gradle 8.7-bin.
 
 ---
 
@@ -60,29 +54,22 @@ All commands must be run from the repo root: `/Volumes/DATA_vivek/GITHUB/NetFlow
 
 ```
 app/src/main/java/com/netflow/predict/
-├── NetFlowApp.kt               @HiltAndroidApp Application class
-├── MainActivity.kt             @AndroidEntryPoint, single-activity
+├── NetFlowApp.kt / MainActivity.kt   Application & single-activity entry
 ├── data/
-│   ├── model/Models.kt         All data classes and enums (single file)
-│   └── repository/             VpnRepository, TrafficRepository (stub flows)
-├── di/AppModule.kt             Hilt @Module — singleton repository bindings
-├── service/
-│   ├── NetFlowVpnService.kt    Foreground VpnService stub
-│   └── BootReceiver.kt         BOOT_COMPLETED → auto-start VPN
-└── ui/
-    ├── theme/                  Color.kt, Type.kt, Shape.kt, Theme.kt
-    ├── navigation/             Screen.kt (sealed), AppNavigation.kt, BottomNavBar.kt
-    ├── components/             Shimmer, RiskBadge, Charts (Canvas), ShieldLogo
-    ├── viewmodel/ViewModels.kt All shared ViewModels (split later as needed)
-    └── screens/
-        ├── splash / onboarding / permissions
-        ├── home / live / apps / predictions / settings / connection
-        └── apps/AppDetailScreen.kt  (AppDetailViewModel colocated in same file)
+│   ├── model/Models.kt                All data classes and enums
+│   ├── local/                         Room: Entities.kt, Daos.kt, NetFlowDatabase.kt
+│   └── repository/Repositories.kt     VpnRepository, TrafficRepository, SettingsRepository
+├── di/AppModule.kt                    Hilt @Module — DB, DAOs, WorkManager
+├── engine/                            PacketParser, FlowTracker, AppResolver,
+│                                      DomainClassifier, VpnPacketLoop
+├── service/                           NetFlowVpnService, BootReceiver
+├── worker/                            PredictionWorker, DataRetentionWorker
+└── ui/                                theme/, navigation/, components/,
+                                       viewmodel/ViewModels.kt, screens/
 ```
 
-Pattern: **MVVM** — `@HiltViewModel` classes inject repositories; screens collect
-`StateFlow` via `collectAsState()`. Navigation is handled by `AppNavigation.kt` (NavHost);
-screens never import each other directly.
+Pattern: **MVVM**. `@HiltViewModel` → repositories → Room/DataStore. Screens collect
+`StateFlow` via `collectAsState()`. Navigation via `NavHost`; screens never import each other.
 
 ---
 
@@ -90,13 +77,13 @@ screens never import each other directly.
 
 ### Kotlin / General
 
-- **Kotlin idioms first**: use `when`, `let`, `also`, `apply`, scope functions, data-class `copy()`.
-- Prefer `val` over `var`. Only use `var` when mutation is genuinely required.
-- Use named arguments for calls with ≥ 3 parameters.
-- `when` expressions must be exhaustive; add `else` only when truly needed.
-- No `!!` — use `?: return`, `?.let {}`, or safe unwrapping patterns.
-- `TODO()` is acceptable for stub/placeholder logic; prefix with `// TODO:` in comments.
-- No checked exceptions; use `runCatching` / `try/catch` only at service/repo boundaries.
+- **Kotlin idioms**: prefer `when`, `let`, `also`, `apply`, `copy()`, scope functions.
+- Prefer `val` over `var`; only use `var` when mutation is genuinely required.
+- Named arguments for calls with ≥ 3 parameters.
+- `when` expressions must be exhaustive; use `else` only when truly necessary.
+- No `!!` — use `?: return`, `?.let {}`, or safe unwrapping.
+- `try/catch` only at service/repository boundaries; use `catch (_: Exception)` for safe enum parsing.
+- Section banners in large files: `// ── Section Name ──────────────`
 
 ### Naming
 
@@ -105,80 +92,81 @@ screens never import each other directly.
 | Classes / Objects | `PascalCase` | `TrafficRepository` |
 | Functions / vars | `camelCase` | `formatBytes()` |
 | Constants (top-level `val`) | `PascalCase` | `Primary`, `ErrorColor` |
-| Enums & entries | `PascalCase` / `SCREAMING_SNAKE` | `RiskLevel.HIGH` |
+| Enums | `PascalCase` class / `SCREAMING_SNAKE` entries | `RiskLevel.HIGH` |
 | Composables | `PascalCase`, noun or noun-phrase | `RiskBadge`, `SectionCard` |
-| Private composables | `PascalCase` with `private fun` | `InfoRow` |
-| ViewModel state | `_backing` + public `val` | `_isLoading` / `isLoading` |
-| Routes (Screen) | `lowercase_snake` string | `"app_detail/{packageName}"` |
+| ViewModel backing fields | `_camelCase` + public `val` | `_isLoading` / `isLoading` |
+| Screen routes | `lowercase_snake` | `"app_detail/{packageName}"` |
 
 ### Imports
 
-- Use wildcard imports for tightly-coupled packages: `androidx.compose.foundation.layout.*`,
-  `androidx.compose.material3.*`, `androidx.compose.runtime.*`, `com.netflow.predict.data.model.*`,
+- **Wildcard** for tightly-coupled packages: `androidx.compose.foundation.layout.*`,
+  `androidx.compose.material3.*`, `androidx.compose.runtime.*`, `kotlinx.coroutines.*`,
+  `kotlinx.coroutines.flow.*`, `com.netflow.predict.data.model.*`,
+  `com.netflow.predict.data.local.dao.*`, `com.netflow.predict.data.local.entity.*`,
   `com.netflow.predict.ui.theme.*`, `com.netflow.predict.ui.components.*`.
-- Use explicit imports for individual utilities: `androidx.compose.ui.Alignment`,
-  `androidx.compose.ui.unit.dp`, `androidx.compose.ui.graphics.Color`.
-- Never use platform wildcard imports (`java.io.*`).
-- Import order (enforced by IDE): Android/Kotlin stdlib → AndroidX → third-party → project-local.
+- **Explicit** for individual utilities: `androidx.compose.ui.Alignment`, `androidx.compose.ui.unit.dp`.
+- **Never** use platform wildcard imports (`java.io.*`).
+- Order: Android/Kotlin stdlib → AndroidX → third-party → project-local.
 
 ### Jetpack Compose
 
-- Every `@Composable` that is a full screen must accept navigation lambdas (`onBack`, `onNavigateTo*`), never a `NavController` directly — exception: screens that host a `BottomBar` (e.g. `HomeScreen`) receive `NavController` only for the bottom bar.
-- State hoisting: hoist state to the nearest `@Composable` that needs it; avoid passing `ViewModel` instances down the tree.
-- Use `hiltViewModel()` at the screen call-site only, never inside child composables.
-- `LaunchedEffect(key)` for one-shot side-effects tied to a key.
-- `remember { mutableStateOf(...) }` for ephemeral UI state (dialogs, sheet visibility).
-- `Modifier` chains: always receiver-first and chained with `.`, one modifier per line for long chains.
-- All `@OptIn` annotations must be at the function level, not file level.
-- Prefer `Card` with `BorderStroke(1.dp, ...)` over plain `Box` with `border()` for elevated surfaces.
+- Screen composables accept navigation lambdas (`onBack`, `onNavigateTo*`), never `NavController` directly — exception: `HomeScreen` receives `NavController` for bottom bar.
+- State hoisting: hoist to nearest composable that needs it; don't pass ViewModels down.
+- `hiltViewModel()` at screen call-site only, never in child composables.
+- `@OptIn` annotations at function level, not file level.
+- `Modifier` chains: receiver-first, one modifier per line for long chains.
+- `remember { mutableStateOf(...) }` for ephemeral UI state.
 
-### Color & Theme Tokens
+### Color & Theme
 
-- Always reference named tokens from `ui/theme/Color.kt` (`Primary`, `ErrorColor`, `SurfaceVariant`, etc.) for **non-Material** custom colors.
-- Reference `MaterialTheme.colorScheme.*` for standard Material roles (`onBackground`, `surface`, `outline`, etc.).
-- Never hard-code hex values inline in composables.
-- `riskColor(riskLevel)` from `RiskBadge.kt` is the canonical function for risk-level colors.
+- Named tokens from `ui/theme/Color.kt` for custom colors (`Primary`, `ErrorColor`, etc.).
+- `MaterialTheme.colorScheme.*` for standard Material roles.
+- Never hard-code hex values inline.
+- `riskColor(riskLevel)` from `RiskBadge.kt` for risk-level colors.
 
 ### Data Layer
 
-- Repositories return `Flow<T>` — never suspend functions at the repo boundary.
-- All fake/stub data lives in `Repositories.kt`; screens must not contain hardcoded fake data (minor static stubs in Timeline tab are acceptable temporarily).
-- `@Singleton` + `@Inject constructor()` on repositories; `AppModule` provides them explicitly for test-replaceability.
+- Repositories use `@Singleton` + `@Inject constructor()` with direct constructor injection.
+- Repositories return `Flow<T>` for queries; `suspend` functions for mutations.
+- `AppModule` provides Database, DAOs, and WorkManager — not repositories.
+- DataStore is defined as `internal val Context.dataStore` in `Repositories.kt` and shared by `BootReceiver.kt`.
 
 ### ViewModels
 
 - `@HiltViewModel` with `@Inject constructor`.
-- Expose only `StateFlow` / `SharedFlow` (no `LiveData`).
+- Expose `StateFlow` / `SharedFlow` only (no `LiveData`).
 - `stateIn(viewModelScope, SharingStarted.Lazily, initialValue)` for derived flows.
-- Side-effects (service calls, DB writes) go in `viewModelScope.launch {}`.
-- Colocated ViewModels (e.g. `AppDetailViewModel` in `AppDetailScreen.kt`) are acceptable for detail screens; shared ViewModels live in `ui/viewmodel/ViewModels.kt`.
+- Side-effects in `viewModelScope.launch {}`.
+- Colocated ViewModels (e.g. `AppDetailViewModel` in `AppDetailScreen.kt`, `SettingsViewModel` in `SettingsScreen.kt`) are acceptable for detail/settings screens.
 
 ### Service Layer
 
-- `NetFlowVpnService` is a stub — packet-parsing logic is marked `TODO` and must not be added without a corresponding Room entity + DAO.
-- `BootReceiver` must check a user preference before starting the service.
-- Use `PendingIntent.FLAG_IMMUTABLE` for all `PendingIntent` instances (Android 12+ requirement).
+- `NetFlowVpnService` uses `@AndroidEntryPoint` and injects DAOs via Hilt.
+- It exposes static `activeFlowTracker` and `isRunning` for cross-component access.
+- `BootReceiver` checks DataStore `auto_start_vpn` preference before starting.
+- Use `PendingIntent.FLAG_IMMUTABLE` for all `PendingIntent` instances.
+
+### Testing
+
+- Unit tests: `app/src/test/`, JUnit 4, `kotlinx-coroutines-test`, `UnconfinedTestDispatcher`.
+- Instrumented tests: `app/src/androidTest/`, Compose UI testing with `createComposeRule()`.
+- Backtick method names: `` `descriptive name of behavior`() ``.
+- Setup/teardown: `Dispatchers.setMain(testDispatcher)` in `@Before`, `resetMain()` in `@After`.
+- Test class mirrors source class name with `Test` suffix: `HomeViewModelTest`.
 
 ---
 
 ## Adding Dependencies
 
-1. Add version to `gradle/libs.versions.toml` `[versions]` block.
-2. Add library alias to `[libraries]` block.
-3. Reference via `libs.<alias>` in `app/build.gradle.kts`.
-4. Use **KSP** for annotation processors (`ksp(libs.xxx.compiler)`) — never KAPT.
+1. Add version to `[versions]` in `gradle/libs.versions.toml`.
+2. Add library alias to `[libraries]`.
+3. Reference as `libs.<alias>` in `app/build.gradle.kts`.
+4. Annotation processors use `ksp(libs.xxx.compiler)` — **never KAPT**.
 
 ---
 
 ## What Does Not Exist Yet
 
-The following are stubs awaiting real implementation:
-
-- Room database (entities, DAOs, database class)
-- Actual VPN packet parsing in `NetFlowVpnService`
-- DataStore persistence for `AppSettings`
-- Real AI/ML model integration (currently all predictions are fake)
-- Unit and instrumented tests (no test files exist yet)
-
-When implementing any of the above, add the corresponding test file alongside the
-production file under `app/src/test/` (unit) or `app/src/androidTest/` (instrumented).
+- Real AI/ML model integration (predictions use heuristic scoring, not a trained model)
+- Cloud sync / remote API integration
+- Room migration strategy (currently uses `fallbackToDestructiveMigration()`)

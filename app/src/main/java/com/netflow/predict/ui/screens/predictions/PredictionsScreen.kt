@@ -270,7 +270,7 @@ private fun AlertsHistoryTab(
             Text("No alerts", style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(8.dp))
-            Text("NetFlow Predict hasn't detected any issues yet.",
+            Text("NetFlow hasn't detected any issues yet.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface)
         }

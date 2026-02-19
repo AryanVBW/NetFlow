@@ -173,7 +173,7 @@ private fun FilterChipsRow(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        TrafficFilter.values().forEach { filter ->
+        TrafficFilter.entries.forEach { filter ->
             FilterChip(
                 selected = activeFilter == filter,
                 onClick  = { onSelect(filter) },

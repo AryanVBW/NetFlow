@@ -158,7 +158,7 @@ fun ConnectionDetailScreen(
             return@Scaffold
         }
 
-        val info = domainInfo!!
+        val info = domainInfo ?: return@Scaffold
 
         LazyColumn(
             modifier       = Modifier.fillMaxSize().padding(padding),

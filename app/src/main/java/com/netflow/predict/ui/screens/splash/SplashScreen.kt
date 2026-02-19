@@ -10,19 +10,46 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import com.netflow.predict.data.repository.SettingsRepository
 import com.netflow.predict.ui.components.ShieldLogoAnimated
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import javax.inject.Inject
+
+// ── ViewModel ─────────────────────────────────────────────────────────────────
+
+@HiltViewModel
+class SplashViewModel @Inject constructor(
+    private val settingsRepo: SettingsRepository
+) : ViewModel() {
+
+    /** Read actual state from DataStore (suspending, called once from LaunchedEffect). */
+    suspend fun resolveDestination(): SplashDestination {
+        val isFirstRun = settingsRepo.isFirstRun.first()
+        val vpnGranted = settingsRepo.vpnPermissionGranted.first()
+        return when {
+            isFirstRun  -> SplashDestination.ONBOARDING
+            !vpnGranted -> SplashDestination.PERMISSIONS
+            else        -> SplashDestination.HOME
+        }
+    }
+}
+
+enum class SplashDestination { ONBOARDING, PERMISSIONS, HOME }
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit,
     onNavigateToPermissions: () -> Unit,
     onNavigateToHome: () -> Unit,
-    isFirstRun: Boolean = true,           // inject from DataStore
-    vpnPermissionGranted: Boolean = false  // inject from VpnRepository
+    viewModel: SplashViewModel = hiltViewModel()
 ) {
     // Animate: logo scales in, text fades in, then navigate
     val logoScale by animateFloatAsState(
@@ -41,10 +68,10 @@ fun SplashScreen(
         delay(300)
         textAlpha = 1f
         delay(1000)
-        when {
-            isFirstRun            -> onNavigateToOnboarding()
-            !vpnPermissionGranted -> onNavigateToPermissions()
-            else                  -> onNavigateToHome()
+        when (viewModel.resolveDestination()) {
+            SplashDestination.ONBOARDING  -> onNavigateToOnboarding()
+            SplashDestination.PERMISSIONS -> onNavigateToPermissions()
+            SplashDestination.HOME        -> onNavigateToHome()
         }
     }
 
@@ -70,7 +97,7 @@ fun SplashScreen(
                 modifier = Modifier.alpha(animatedTextAlpha)
             ) {
                 Text(
-                    text  = "NetFlow Predict",
+                    text  = "NetFlow",
                     style = MaterialTheme.typography.displaySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
