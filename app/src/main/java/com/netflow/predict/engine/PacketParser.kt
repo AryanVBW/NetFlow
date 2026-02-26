@@ -22,6 +22,9 @@ object PacketParser {
         val payloadSize: Int,
         val totalLength: Int,
         val tcpFlags: Int = 0,    // only for TCP
+        val seqNum: Long = 0,     // TCP sequence number
+        val ackNum: Long = 0,     // TCP acknowledgement number
+        val windowSize: Int = 0,  // TCP window size
         val isOutbound: Boolean = true
     )
 
@@ -95,12 +98,21 @@ object PacketParser {
         val dstPort = buffer.getShort(ihl + 2).toInt() and 0xFFFF
 
         var tcpFlags = 0
+        var seqNum = 0L
+        var ackNum = 0L
+        var windowSize = 0
         var transportHeaderSize = 8 // UDP
         if (protocol == PROTO_TCP) {
             if (length < ihl + 14) return null
             tcpFlags = buffer.get(ihl + 13).toInt() and 0xFF
             val dataOffset = ((buffer.get(ihl + 12).toInt() and 0xFF) shr 4) * 4
             transportHeaderSize = dataOffset
+            // Parse TCP sequence/ack numbers and window size
+            if (length >= ihl + 16) {
+                seqNum = buffer.getInt(ihl + 4).toLong() and 0xFFFFFFFFL
+                ackNum = buffer.getInt(ihl + 8).toLong() and 0xFFFFFFFFL
+                windowSize = buffer.getShort(ihl + 14).toInt() and 0xFFFF
+            }
         }
 
         val payloadSize = totalLength - ihl - transportHeaderSize
@@ -114,7 +126,10 @@ object PacketParser {
             dstPort = dstPort,
             payloadSize = maxOf(0, payloadSize),
             totalLength = totalLength,
-            tcpFlags = tcpFlags
+            tcpFlags = tcpFlags,
+            seqNum = seqNum,
+            ackNum = ackNum,
+            windowSize = windowSize
         )
     }
 
@@ -150,11 +165,19 @@ object PacketParser {
         val dstPort = buffer.getShort(headerSize + 2).toInt() and 0xFFFF
 
         var tcpFlags = 0
+        var seqNum = 0L
+        var ackNum = 0L
+        var windowSize = 0
         var transportHeaderSize = 8
         if (protocol == PROTO_TCP && length >= headerSize + 14) {
             tcpFlags = buffer.get(headerSize + 13).toInt() and 0xFF
             val dataOffset = ((buffer.get(headerSize + 12).toInt() and 0xFF) shr 4) * 4
             transportHeaderSize = dataOffset
+            if (length >= headerSize + 16) {
+                seqNum = buffer.getInt(headerSize + 4).toLong() and 0xFFFFFFFFL
+                ackNum = buffer.getInt(headerSize + 8).toLong() and 0xFFFFFFFFL
+                windowSize = buffer.getShort(headerSize + 14).toInt() and 0xFFFF
+            }
         }
 
         return ParsedPacket(
@@ -166,7 +189,10 @@ object PacketParser {
             dstPort = dstPort,
             payloadSize = maxOf(0, payloadLength - transportHeaderSize),
             totalLength = headerSize + payloadLength,
-            tcpFlags = tcpFlags
+            tcpFlags = tcpFlags,
+            seqNum = seqNum,
+            ackNum = ackNum,
+            windowSize = windowSize
         )
     }
 

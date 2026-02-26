@@ -17,6 +17,7 @@ import com.netflow.predict.engine.VpnPacketLoop
 import com.netflow.predict.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
@@ -126,32 +127,46 @@ class NetFlowVpnService : VpnService() {
 
             // Build the VPN interface.
             //
-            // DNS-only routing strategy:
-            //   - Only the 5 well-known DNS server IPs are added to the route table.
-            //   - All other traffic (TCP, non-routed UDP, QUIC, ICMP…) bypasses the TUN
-            //     entirely via the OS real network stack — zero impact on app speeds.
-            //   - DNS packets routed into the TUN are intercepted by VpnPacketLoop,
-            //     forwarded over a PROTECTED socket (prevent loop), and the response
-            //     is written back through the TUN to the originating app.
-            //   - allowBypass() lets apps that request it (or traffic not matching any
-            //     route) go directly to the real network.
+            // Two routing modes controlled by the dnsOnlyMode setting:
+            //
+            // FULL PROXY (default, dnsOnlyMode=false):
+            //   - Routes 0.0.0.0/0 through the TUN — captures ALL device traffic.
+            //   - VpnPacketLoop proxies TCP via TcpProxySession (NIO SocketChannel),
+            //     UDP via UdpProxySession (bidirectional DatagramSocket), and DNS via
+            //     direct interception — all through protect()-ed sockets.
+            //   - Device's real IP, location, and speed are preserved because all
+            //     relay sockets use the real network interface.
+            //
+            // DNS-ONLY (dnsOnlyMode=true):
+            //   - Routes only 5 specific DNS server IPs through the TUN.
+            //   - All other traffic bypasses the TUN natively via allowBypass().
+            //   - Lightweight mode for DNS monitoring only.
+            //
+            val dnsOnly = kotlinx.coroutines.runBlocking {
+                settingsRepository.settings.first().dnsOnlyMode
+            }
+
             val builder = Builder()
                 .setSession("NetFlow")
                 .addAddress("10.0.0.2", 32)
                 .addDnsServer("8.8.8.8")
                 .addDnsServer("8.8.4.4")
                 .setMtu(1500)
-                .allowBypass() // ← allows non-DNS traffic to bypass TUN natively
-            // NOTE: setBlocking() is intentionally omitted; the default (non-blocking)
-            // is more CPU-efficient — the read loop yields via delay() when no data arrive.
 
-            // Route only specific DNS servers so we intercept DNS queries
-            // without touching any other traffic.
-            builder.addRoute("8.8.8.8", 32)
-            builder.addRoute("8.8.4.4", 32)
-            builder.addRoute("1.1.1.1", 32)
-            builder.addRoute("1.0.0.1", 32)
-            builder.addRoute("9.9.9.9", 32)
+            if (dnsOnly) {
+                // DNS-only mode — route only DNS servers, bypass everything else
+                builder.allowBypass()
+                builder.addRoute("8.8.8.8", 32)
+                builder.addRoute("8.8.4.4", 32)
+                builder.addRoute("1.1.1.1", 32)
+                builder.addRoute("1.0.0.1", 32)
+                builder.addRoute("9.9.9.9", 32)
+                Log.i(TAG, "VPN running in DNS-only mode")
+            } else {
+                // Full proxy mode — capture ALL traffic
+                builder.addRoute("0.0.0.0", 0)   // IPv4 catch-all
+                Log.i(TAG, "VPN running in full proxy mode")
+            }
 
             // Exclude our own app from VPN to prevent loopback
             try {
