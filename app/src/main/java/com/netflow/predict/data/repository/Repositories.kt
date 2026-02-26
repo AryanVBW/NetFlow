@@ -31,6 +31,7 @@ class SettingsRepository @Inject constructor(
 ) {
     private object Keys {
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val LANGUAGE = stringPreferencesKey("language")
         val RETENTION_DAYS = intPreferencesKey("retention_days")
         val DNS_ONLY_MODE = booleanPreferencesKey("dns_only_mode")
         val AI_ENABLED = booleanPreferencesKey("ai_enabled")
@@ -39,6 +40,7 @@ class SettingsRepository @Inject constructor(
         val AUTO_START_VPN = booleanPreferencesKey("auto_start_vpn")
         val FIRST_RUN = booleanPreferencesKey("first_run")
         val VPN_PERMISSION_GRANTED = booleanPreferencesKey("vpn_permission_granted")
+        val SETTINGS_PIN_HASH = stringPreferencesKey("settings_pin_hash")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -48,6 +50,7 @@ class SettingsRepository @Inject constructor(
             } catch (_: Exception) {
                 ThemeMode.DARK
             },
+            language = prefs[Keys.LANGUAGE] ?: "system",
             retentionDays = prefs[Keys.RETENTION_DAYS] ?: 30,
             dnsOnlyMode = prefs[Keys.DNS_ONLY_MODE] ?: false,
             aiEnabled = prefs[Keys.AI_ENABLED] ?: true,
@@ -90,6 +93,10 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setDeveloperMode(enabled: Boolean) {
         context.dataStore.edit { it[Keys.DEVELOPER_MODE] = enabled }
+    }
+
+    suspend fun setLanguage(lang: String) {
+        context.dataStore.edit { it[Keys.LANGUAGE] = lang }
     }
 
     suspend fun setFirstRun(firstRun: Boolean) {
