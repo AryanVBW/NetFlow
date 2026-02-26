@@ -124,27 +124,34 @@ class NetFlowVpnService : VpnService() {
             flowTracker = tracker
             activeFlowTracker = tracker
 
-            // Build the VPN interface
+            // Build the VPN interface.
+            //
+            // DNS-only routing strategy:
+            //   - Only the 5 well-known DNS server IPs are added to the route table.
+            //   - All other traffic (TCP, non-routed UDP, QUIC, ICMP…) bypasses the TUN
+            //     entirely via the OS real network stack — zero impact on app speeds.
+            //   - DNS packets routed into the TUN are intercepted by VpnPacketLoop,
+            //     forwarded over a PROTECTED socket (prevent loop), and the response
+            //     is written back through the TUN to the originating app.
+            //   - allowBypass() lets apps that request it (or traffic not matching any
+            //     route) go directly to the real network.
             val builder = Builder()
                 .setSession("NetFlow")
                 .addAddress("10.0.0.2", 32)
                 .addDnsServer("8.8.8.8")
                 .addDnsServer("8.8.4.4")
                 .setMtu(1500)
-                .setBlocking(true) // blocking mode for the read loop
+                .allowBypass() // ← allows non-DNS traffic to bypass TUN natively
+            // NOTE: setBlocking() is intentionally omitted; the default (non-blocking)
+            // is more CPU-efficient — the read loop yields via delay() when no data arrive.
 
-            // Read settings to determine routing mode
-            // Default: Monitor Everything (Block Non-DNS) - v1 limitation
-            // Improvement: We allow internet by default by NOT routing 0.0.0.0 if we can't forward
-            // However, to capture DNS, we MUST route DNS.
-            
-            // For now, we maintain v1 behavior but prepare for DNS-only mode
-            // Ideally, we should check a setting here.
-            // Since we can't access Flow inside this sync method easily without blocking,
-            // we'll assume a safe default or use runBlocking (risky).
-            // Better: launch a setup job. But startVpn needs to be synchronous for FG service?
-            // We'll stick to 0.0.0.0/0 for now as per original code, but note the limitation.
-            builder.addRoute("0.0.0.0", 0)
+            // Route only specific DNS servers so we intercept DNS queries
+            // without touching any other traffic.
+            builder.addRoute("8.8.8.8", 32)
+            builder.addRoute("8.8.4.4", 32)
+            builder.addRoute("1.1.1.1", 32)
+            builder.addRoute("1.0.0.1", 32)
+            builder.addRoute("9.9.9.9", 32)
 
             // Exclude our own app from VPN to prevent loopback
             try {
@@ -169,7 +176,8 @@ class NetFlowVpnService : VpnService() {
 
             // Start the packet processing loop
             val fd = tunFd ?: return
-            val loop = VpnPacketLoop(fd, tracker, resolver)
+            // Pass `this` (VpnService) so VpnPacketLoop can protect() its sockets
+            val loop = VpnPacketLoop(fd, tracker, resolver, this)
             packetLoop = loop
             scope.launch {
                 try {

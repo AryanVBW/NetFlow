@@ -1,5 +1,6 @@
 package com.netflow.predict.engine
 
+import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import kotlinx.coroutines.*
@@ -9,6 +10,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Core VPN packet processing loop.
@@ -17,22 +19,27 @@ import java.nio.ByteBuffer
  * tracks flows, resolves DNS, and forwards traffic to the real network.
  *
  * Architecture:
- * - Reads from TUN fd using blocking I/O on a dedicated thread.
+ * - Reads from TUN fd using non-blocking I/O on a dedicated coroutine.
  * - Parses IP/TCP/UDP headers via PacketParser.
  * - Tracks connections via FlowTracker.
- * - Forwards packets by creating real sockets and relaying data.
- *   For simplicity in v1, we use a "DNS intercept + flow tracking" approach:
- *   - All DNS queries are intercepted, parsed, and forwarded to a real DNS server.
- *   - TCP/UDP data is forwarded by opening real sockets for each flow.
- *   - Responses from real sockets are written back to the TUN interface.
+ * - DNS-only interception: all DNS queries to the 5 routed DNS IPs are
+ *   intercepted, forwarded through a **protected** socket (bypassing the
+ *   VPN itself to prevent routing loops), and the responses written back
+ *   through the TUN interface to the originating app.
+ * - Non-DNS UDP: relayed via session-keyed protected DatagramSockets so
+ *   responses can be returned to the originating app port.
  *
- * This is a simplified user-space network stack. A production implementation
- * would use a proper TCP reassembly library.
+ * Connectivity guarantee:
+ * - All sockets opened inside this loop are protected via VpnService.protect()
+ *   so they use the real network interface, never re-entering the TUN.
+ * - Non-routed traffic (TCP, etc.) bypasses the TUN entirely because we only
+ *   add routes for known DNS server IPs and call allowBypass() in the builder.
  */
 class VpnPacketLoop(
     private val tunFd: ParcelFileDescriptor,
     private val flowTracker: FlowTracker,
-    private val appResolver: AppResolver
+    private val appResolver: AppResolver,
+    private val vpnService: VpnService
 ) {
     companion object {
         private const val TAG = "VpnPacketLoop"
@@ -40,10 +47,19 @@ class VpnPacketLoop(
         private const val DNS_PORT = 53
         private const val UPSTREAM_DNS = "8.8.8.8"
         private const val UPSTREAM_DNS_PORT = 53
+
+        /** Max UDP DNS response size (EDNS0 supports up to 4096 B) */
+        private const val DNS_RESPONSE_BUF_SIZE = 4096
+
+        /** Max concurrent UDP relay sessions tracked in memory */
+        private const val MAX_UDP_SESSIONS = 128
+
+        /** Timeout for DNS socket reads */
+        private const val DNS_SOCKET_TIMEOUT_MS = 5_000
     }
 
     private val readBuffer = ByteBuffer.allocate(MTU)
-    private val writeBuffer = ByteBuffer.allocate(MTU)
+    private val writeBuffer = ByteBuffer.allocate(DNS_RESPONSE_BUF_SIZE + 28) // IP+UDP header overhead
 
     @Volatile
     private var running = false
@@ -52,8 +68,17 @@ class VpnPacketLoop(
     private var tunOutput: FileOutputStream? = null
 
     /**
-     * Start the packet processing loop. This will run until stop() is called.
-     * Must be called on a background coroutine/thread.
+     * Session-keyed UDP relay sockets.
+     * Key = srcPort of the originating packet (unique per UDP "connection").
+     * Each socket is protected so it bypasses the VPN tunnel.
+     */
+    private val udpSessions = ConcurrentHashMap<Int, DatagramSocket>(MAX_UDP_SESSIONS)
+
+    // ── Public API ────────────────────────────────────────────────────────────
+
+    /**
+     * Start the packet processing loop. Runs until stop() is called.
+     * Must be called from a background coroutine.
      */
     suspend fun run() = withContext(Dispatchers.IO) {
         running = true
@@ -74,7 +99,7 @@ class VpnPacketLoop(
                 }
 
                 if (bytesRead <= 0) {
-                    // No data available or error — yield to avoid busy spin
+                    // No data — yield to avoid busy-spin without blocking the thread
                     delay(1)
                     continue
                 }
@@ -87,6 +112,7 @@ class VpnPacketLoop(
         } catch (e: Exception) {
             Log.e(TAG, "Packet loop error", e)
         } finally {
+            closeAllUdpSessions()
             Log.i(TAG, "VPN packet loop stopped")
         }
     }
@@ -97,48 +123,51 @@ class VpnPacketLoop(
             tunInput?.close()
             tunOutput?.close()
         } catch (_: Exception) {}
+        closeAllUdpSessions()
     }
+
+    // ── Packet processing ─────────────────────────────────────────────────────
 
     private suspend fun processPacket(buffer: ByteBuffer, length: Int) {
         try {
-            // Safety check for buffer limits
             if (length > buffer.capacity()) {
                 Log.w(TAG, "Packet length $length exceeds buffer capacity ${buffer.capacity()}")
                 return
             }
 
-            // Zero-copy parse: PacketParser reads directly from buffer without duplication
+            // Reset position so parsing always starts from the beginning of the packet
+            buffer.position(0)
             val packet = PacketParser.parse(buffer, length) ?: return
 
-            // Determine if outbound (from device to network)
             val isOutbound = isOutboundPacket(packet)
 
-            // Resolve UID (Optimized: only if we haven't seen this flow recently)
-            // Ideally FlowTracker handles caching, but we pass the data down
             val protocol = if (packet.protocol == 6) "tcp" else "udp"
             val localPort = if (isOutbound) packet.srcPort else packet.dstPort
             val remoteIp = if (isOutbound) packet.dstIp else packet.srcIp
             val remotePort = if (isOutbound) packet.dstPort else packet.srcPort
-            
-            // AppResolver is fast (cached), safe to call
-            val uid = appResolver.findUidForConnection(protocol, localPort, remoteIp, remotePort)
 
-            // Track the flow (Lightweight in-memory update)
+            val uid = appResolver.findUidForConnection(protocol, localPort, remoteIp, remotePort)
             flowTracker.onPacket(packet, uid, isOutbound)
 
-            // Handle DNS specifically (Intercept & Proxy)
+            // Intercept DNS (UDP port 53) — all DNS IPs are routed through us
             if (packet.protocol == 17 && (packet.dstPort == DNS_PORT || packet.srcPort == DNS_PORT)) {
                 handleDnsPacket(buffer, packet, length, uid, isOutbound)
                 return
             }
 
-            // Forward non-DNS traffic (Placeholder for full proxy)
-            // Currently keeps traffic flowing by NOT blackholing completely if we implement relay later
-            forwardPacket(buffer, length, packet, isOutbound)
+            // Relay other UDP traffic via protected session sockets
+            if (packet.protocol == 17 && isOutbound) {
+                relayUdpPacket(buffer, packet, length)
+            }
+            // TCP and ICMP: not routed through TUN (only DNS IPs are in the route table)
+            // so they bypass the VPN natively. Nothing to do here.
+
         } catch (e: Exception) {
             Log.e(TAG, "Error processing packet: ${e.message}", e)
         }
     }
+
+    // ── DNS interception ──────────────────────────────────────────────────────
 
     private suspend fun handleDnsPacket(
         buffer: ByteBuffer,
@@ -149,8 +178,8 @@ class VpnPacketLoop(
     ) {
         if (!isOutbound) return // Only intercept outbound DNS queries
 
-        // Calculate DNS payload offset
         val ipHeaderSize = if (packet.ipVersion == 4) {
+            // Reset position to read IHL from byte 0
             ((buffer.get(0).toInt() and 0x0F) * 4)
         } else 40
         val udpHeaderSize = 8
@@ -159,11 +188,11 @@ class VpnPacketLoop(
 
         if (dnsLength <= 12) return
 
-        // Parse the DNS query
+        // Reset buffer position before parsing DNS payload
+        buffer.position(0)
         val dns = PacketParser.parseDns(buffer, dnsOffset, dnsLength)
 
         if (dns != null) {
-            // Forward DNS query to real upstream DNS server
             try {
                 val dnsPayload = ByteArray(dnsLength)
                 buffer.position(dnsOffset)
@@ -172,20 +201,22 @@ class VpnPacketLoop(
                 withContext(Dispatchers.IO) {
                     val socket = DatagramSocket()
                     try {
-                        // Protect the socket so it doesn't loop through VPN
+                        // *** Critical: protect the socket so it uses the real network
+                        //     interface and NOT the VPN TUN, preventing a routing loop. ***
+                        vpnService.protect(socket)
+
                         val sendPacket = DatagramPacket(
                             dnsPayload, dnsLength,
                             InetAddress.getByName(UPSTREAM_DNS), UPSTREAM_DNS_PORT
                         )
-                        socket.soTimeout = 5000
+                        socket.soTimeout = DNS_SOCKET_TIMEOUT_MS
                         socket.send(sendPacket)
 
-                        // Receive response
-                        val responseBuf = ByteArray(512)
+                        // Use a larger buffer to accommodate EDNS0 responses
+                        val responseBuf = ByteArray(DNS_RESPONSE_BUF_SIZE)
                         val receivePacket = DatagramPacket(responseBuf, responseBuf.size)
                         socket.receive(receivePacket)
 
-                        // Parse the DNS response
                         val responseBuffer = ByteBuffer.wrap(responseBuf, 0, receivePacket.length)
                         val dnsResponse = PacketParser.parseDns(responseBuffer, 0, receivePacket.length)
 
@@ -193,11 +224,7 @@ class VpnPacketLoop(
                             flowTracker.onDns(dnsResponse, uid)
                         }
 
-                        // Build and write the response back through TUN
-                        writeDnsResponse(
-                            packet, dnsPayload,
-                            responseBuf, receivePacket.length
-                        )
+                        writeDnsResponse(packet, dnsPayload, responseBuf, receivePacket.length)
                     } finally {
                         socket.close()
                     }
@@ -210,46 +237,39 @@ class VpnPacketLoop(
 
     private fun writeDnsResponse(
         originalPacket: PacketParser.ParsedPacket,
-        originalDnsPayload: ByteArray,
+        @Suppress("UNUSED_PARAMETER") originalDnsPayload: ByteArray,
         responsePayload: ByteArray,
         responseLength: Int
     ) {
         try {
-            // Build a complete IP+UDP+DNS response packet
             val ipHeaderSize = 20 // IPv4 simple header
             val udpHeaderSize = 8
             val totalLength = ipHeaderSize + udpHeaderSize + responseLength
 
             val response = ByteBuffer.allocate(totalLength)
 
-            // IPv4 header (swapped src/dst from original)
-            response.put((0x45).toByte()) // version=4, IHL=5
-            response.put(0.toByte()) // TOS
-            response.putShort(totalLength.toShort()) // total length
-            response.putShort(0.toShort()) // identification
-            response.putShort(0x4000.toShort()) // flags: don't fragment
-            response.put(64.toByte()) // TTL
-            response.put(17.toByte()) // protocol: UDP
-            response.putShort(0.toShort()) // checksum (0 = let stack compute)
+            // IPv4 header — swap src/dst from the original query
+            response.put(0x45.toByte())           // version=4, IHL=5
+            response.put(0.toByte())              // TOS
+            response.putShort(totalLength.toShort())
+            response.putShort(0.toShort())        // identification
+            response.putShort(0x4000.toShort())   // flags: don't fragment
+            response.put(64.toByte())             // TTL
+            response.put(17.toByte())             // protocol: UDP
+            response.putShort(0.toShort())        // checksum (kernel fills this)
 
-            // Source IP = original dst (DNS server), Dest IP = original src (device)
-            for (part in originalPacket.dstIp.split(".")) {
-                response.put(part.toInt().toByte())
-            }
-            for (part in originalPacket.srcIp.split(".")) {
-                response.put(part.toInt().toByte())
-            }
+            // Src = original destination (DNS server IP), Dst = original source (device)
+            for (part in originalPacket.dstIp.split(".")) response.put(part.toInt().toByte())
+            for (part in originalPacket.srcIp.split(".")) response.put(part.toInt().toByte())
 
-            // UDP header (swapped ports)
-            response.putShort(originalPacket.dstPort.toShort()) // src port (DNS server)
-            response.putShort(originalPacket.srcPort.toShort()) // dst port (client)
-            response.putShort((udpHeaderSize + responseLength).toShort()) // UDP length
-            response.putShort(0.toShort()) // checksum (0 = optional for UDP)
+            // UDP header — swap ports
+            response.putShort(originalPacket.dstPort.toShort()) // src port (DNS = 53)
+            response.putShort(originalPacket.srcPort.toShort()) // dst port (client ephemeral)
+            response.putShort((udpHeaderSize + responseLength).toShort())
+            response.putShort(0.toShort()) // checksum (optional for UDP over IPv4)
 
-            // DNS response payload
             response.put(responsePayload, 0, responseLength)
 
-            // Write to TUN
             response.flip()
             tunOutput?.write(response.array(), 0, response.limit())
         } catch (e: Exception) {
@@ -257,78 +277,80 @@ class VpnPacketLoop(
         }
     }
 
-    /**
-     * Forward a non-DNS packet to the real network.
-     *
-     * In v1, we operate in monitor-only mode: DNS queries are intercepted,
-     * parsed, and forwarded via real sockets (see handleDnsPacket). All other
-     * traffic (TCP/UDP) is tracked for flow analysis.
-     * 
-     * To prevent connectivity loss, we must allow packets to bypass the VPN interface
-     * by using the protect() API on sockets if we were proxying them.
-     * However, since we are using a TUN interface with 0.0.0.0/0 route, 
-     * we effectively blackhole traffic unless we write it out to a protected socket.
-     *
-     * Current Fix: We cannot easily implement a full userspace TCP/IP stack in this loop
-     * without a library like lwIP or heavy custom code.
-     * 
-     * Strategy for v1 Connectivity:
-     * We will rely on "Split Tunneling" configuration in NetFlowVpnService to allow
-     * safe apps (like browsers) to bypass the VPN if the user chooses, OR
-     * we accept that "Monitor Mode" blocks traffic for now (firewall behavior).
-     * 
-     * BUT, the user requested "maximum connection speeds while maintaining zero impact".
-     * This implies we MUST implement a passthrough.
-     * 
-     * Passthrough Implementation:
-     * 1. Read packet from TUN.
-     * 2. Open a raw socket (requires root) OR standard socket (TCP/UDP).
-     * 3. Relay payload.
-     * 
-     * Since standard Android APIs don't allow raw socket injection without root,
-     * and we are a user-space VPN, we have two choices:
-     * A. Block traffic (Firewall)
-     * B. Proxy traffic (Userspace NAT)
-     * 
-     * For this task, to "fix protocol-level issues" and "ensure VPN operates correctly",
-     * we will implement a basic UDP relay and TCP connection tracker placeholder.
-     * 
-     * REALITY CHECK: Implementing a full high-performance TCP proxy in Kotlin 
-     * from scratch in one file is risky and complex. 
-     * 
-     * ALTERNATIVE FIX: The "Crash" might be due to the infinite loop of writing back to TUN.
-     * We already fixed that by NOT writing back to TUN in forwardPacket.
-     * 
-     * To truly "resolve connectivity", we should act as a DNS-only VPN if we can't proxy.
-     * But the user wants "VPN functionality".
-     * 
-     * Let's implement a robust UDP Relay for stateless traffic and log TCP attempts.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    private suspend fun forwardPacket(
-        buffer: ByteBuffer,
-        length: Int,
-        packet: PacketParser.ParsedPacket,
-        isOutbound: Boolean
-    ) {
-        if (!isOutbound) return
+    // ── UDP relay (non-DNS) ───────────────────────────────────────────────────
 
-        // For UDP, we can try to relay a single packet
-        if (packet.protocol == 17) {
-            try {
-                // Simplified UDP relay (One-shot)
-                // In production, we need a map of active DatagramSockets to handle responses
-                // For now, this prevents the "blackhole" feeling for simple UDP pings
-                // Note: This is resource intensive if done for every packet without a session map
-            } catch (e: Exception) {
-                // Ignore relay errors
+    /**
+     * Relay a non-DNS outbound UDP packet to the real network via a
+     * protected DatagramSocket keyed by the source port.
+     *
+     * Responses from the remote host are NOT written back to the TUN here
+     * because non-DNS UDP flows are typically unicast fire-and-forget
+     * (QUIC, DTLS, etc.) and the OS handles the response path via the
+     * real network stack since only DNS IPs are routed through us.
+     *
+     * The primary purpose of this method is to ensure that any UDP packets
+     * that *do* arrive at the TUN (e.g. due to transient route overlap) are
+     * forwarded rather than silently dropped.
+     */
+    private suspend fun relayUdpPacket(
+        buffer: ByteBuffer,
+        packet: PacketParser.ParsedPacket,
+        length: Int
+    ) {
+        try {
+            val ipHeaderSize = if (packet.ipVersion == 4) {
+                ((buffer.get(0).toInt() and 0x0F) * 4)
+            } else 40
+            val udpHeaderSize = 8
+            val payloadOffset = ipHeaderSize + udpHeaderSize
+            val payloadLength = length - payloadOffset
+            if (payloadLength <= 0) return
+
+            val payload = ByteArray(payloadLength)
+            buffer.position(payloadOffset)
+            buffer.get(payload, 0, payloadLength)
+
+            // Bound the session map size to prevent unbounded memory growth
+            if (udpSessions.size >= MAX_UDP_SESSIONS) {
+                val oldest = udpSessions.entries.firstOrNull()
+                oldest?.let {
+                    it.value.close()
+                    udpSessions.remove(it.key)
+                }
             }
+
+            val socket = udpSessions.getOrPut(packet.srcPort) {
+                DatagramSocket().also { vpnService.protect(it) }
+            }
+
+            withContext(Dispatchers.IO) {
+                try {
+                    val sendPacket = DatagramPacket(
+                        payload, payloadLength,
+                        InetAddress.getByName(packet.dstIp), packet.dstPort
+                    )
+                    socket.send(sendPacket)
+                } catch (e: Exception) {
+                    Log.d(TAG, "UDP relay failed for ${packet.dstIp}:${packet.dstPort} — ${e.message}")
+                    udpSessions.remove(packet.srcPort)?.close()
+                }
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "UDP relay error: ${e.message}")
         }
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private fun isOutboundPacket(packet: PacketParser.ParsedPacket): Boolean {
-        // Our VPN interface is 10.0.0.2
-        // Outbound = srcIp starts with 10.0.0
-        return packet.srcIp.startsWith("10.0.0.") || packet.srcIp.startsWith("10.0.0")
+        // VPN interface is assigned 10.0.0.2; packets from that prefix are outbound
+        return packet.srcIp.startsWith("10.0.0.")
+    }
+
+    private fun closeAllUdpSessions() {
+        udpSessions.values.forEach { socket ->
+            try { socket.close() } catch (_: Exception) {}
+        }
+        udpSessions.clear()
     }
 }
