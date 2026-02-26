@@ -172,7 +172,12 @@ class NetFlowVpnService : VpnService() {
             val loop = VpnPacketLoop(fd, tracker, resolver)
             packetLoop = loop
             scope.launch {
-                loop.run()
+                try {
+                    loop.run()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Packet loop crashed", e)
+                    stopSelf()
+                }
             }
 
             // Update notification to show active state

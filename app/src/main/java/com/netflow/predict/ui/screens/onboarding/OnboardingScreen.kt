@@ -19,6 +19,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.netflow.predict.ui.components.ShieldLogoAnimated
+import com.netflow.predict.data.repository.SettingsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.netflow.predict.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -58,18 +64,40 @@ private val slides = listOf(
     )
 )
 
+@HiltViewModel
+class OnboardingViewModel @Inject constructor(
+    private val settingsRepo: SettingsRepository
+) : ViewModel() {
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            settingsRepo.setFirstRun(false)
+        }
+    }
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 @Composable
 fun OnboardingScreen(
     onSetupProtection: () -> Unit,
-    onBasicMode: () -> Unit
+    onBasicMode: () -> Unit,
+    viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val pagerState = rememberPagerState(pageCount = { slides.size })
     val scope      = rememberCoroutineScope()
     var showBasicModeSheet by remember { mutableStateOf(false) }
 
     val isLastSlide = pagerState.currentPage == slides.lastIndex
+
+    // Wrap callbacks to persist state
+    val handleSetup = {
+        viewModel.completeOnboarding()
+        onSetupProtection()
+    }
+    val handleBasic = {
+        viewModel.completeOnboarding()
+        onBasicMode()
+    }
 
     Box(
         modifier = Modifier
@@ -112,7 +140,7 @@ fun OnboardingScreen(
                     if (page < slides.lastIndex)
                         scope.launch { pagerState.animateScrollToPage(page + 1) }
                 },
-                onSetup    = onSetupProtection,
+                onSetup    = handleSetup,
                 onBasic    = { showBasicModeSheet = true }
             )
         }
@@ -148,8 +176,8 @@ fun OnboardingScreen(
     // ── Basic mode bottom sheet ───────────────────────────────────────────────
     if (showBasicModeSheet) {
         BasicModeSheet(
-            onContinueBasic   = { showBasicModeSheet = false; onBasicMode() },
-            onSetupProtection = { showBasicModeSheet = false; onSetupProtection() },
+            onContinueBasic   = { showBasicModeSheet = false; handleBasic() },
+            onSetupProtection = { showBasicModeSheet = false; handleSetup() },
             onDismiss         = { showBasicModeSheet = false }
         )
     }
