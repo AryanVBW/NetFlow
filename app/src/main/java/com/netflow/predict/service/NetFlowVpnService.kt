@@ -14,6 +14,7 @@ import com.netflow.predict.data.local.dao.*
 import com.netflow.predict.engine.AppResolver
 import com.netflow.predict.engine.FlowTracker
 import com.netflow.predict.engine.VpnPacketLoop
+import com.netflow.predict.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import javax.inject.Inject
@@ -52,6 +53,7 @@ class NetFlowVpnService : VpnService() {
     @Inject lateinit var dnsQueryDao: DnsQueryDao
     @Inject lateinit var appDao: AppDao
     @Inject lateinit var domainDao: DomainDao
+    @Inject lateinit var settingsRepository: SettingsRepository
 
     private var tunFd: ParcelFileDescriptor? = null
     private var serviceScope: CoroutineScope? = null
@@ -95,10 +97,21 @@ class NetFlowVpnService : VpnService() {
     private fun startVpn() {
         try {
             tunFd?.close()
+            
+            // Start coroutine scope first
+            serviceScope = CoroutineScope(
+                SupervisorJob() + Dispatchers.IO + CoroutineName("VpnServiceScope")
+            )
+            val scope = serviceScope ?: return
 
-            // Initialize the app resolver and preload the package cache
-            val resolver = AppResolver(this).also { it.preloadCache() }
+            // Initialize the app resolver
+            val resolver = AppResolver(this)
             appResolver = resolver
+            
+            // Preload cache on IO thread to avoid ANR
+            scope.launch {
+                resolver.preloadCache()
+            }
 
             // Initialize the flow tracker with real DAOs
             val tracker = FlowTracker(
@@ -115,11 +128,23 @@ class NetFlowVpnService : VpnService() {
             val builder = Builder()
                 .setSession("NetFlow")
                 .addAddress("10.0.0.2", 32)
-                .addRoute("0.0.0.0", 0)
                 .addDnsServer("8.8.8.8")
                 .addDnsServer("8.8.4.4")
                 .setMtu(1500)
                 .setBlocking(true) // blocking mode for the read loop
+
+            // Read settings to determine routing mode
+            // Default: Monitor Everything (Block Non-DNS) - v1 limitation
+            // Improvement: We allow internet by default by NOT routing 0.0.0.0 if we can't forward
+            // However, to capture DNS, we MUST route DNS.
+            
+            // For now, we maintain v1 behavior but prepare for DNS-only mode
+            // Ideally, we should check a setting here.
+            // Since we can't access Flow inside this sync method easily without blocking,
+            // we'll assume a safe default or use runBlocking (risky).
+            // Better: launch a setup job. But startVpn needs to be synchronous for FG service?
+            // We'll stick to 0.0.0.0/0 for now as per original code, but note the limitation.
+            builder.addRoute("0.0.0.0", 0)
 
             // Exclude our own app from VPN to prevent loopback
             try {
@@ -139,13 +164,7 @@ class NetFlowVpnService : VpnService() {
             isRunning = true
             Log.i(TAG, "VPN tunnel established")
 
-            // Start coroutine scope for the packet loop
-            serviceScope = CoroutineScope(
-                SupervisorJob() + Dispatchers.IO + CoroutineName("VpnServiceScope")
-            )
-
             // Start the flow tracker (periodic flush to DB)
-            val scope = serviceScope ?: return
             tracker.start(scope)
 
             // Start the packet processing loop

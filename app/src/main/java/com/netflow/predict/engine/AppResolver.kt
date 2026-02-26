@@ -5,9 +5,11 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
+import android.system.OsConstants
 import android.util.Log
 import java.io.BufferedReader
 import java.io.FileReader
+import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -104,14 +106,20 @@ class AppResolver(private val context: Context) {
     }
 
     /**
-     * Look up the UID that owns a specific network connection using /proc/net.
-     * This works without root on most Android versions.
+     * Look up the UID that owns a specific network connection.
+     * Uses ConnectivityManager on API 29+ and /proc/net on older versions.
      *
      * @param protocol "tcp" or "udp"
      * @param localPort the local port of the connection
      * @return the UID, or -1 if not found
      */
-    fun findUidForConnection(protocol: String, localPort: Int): Int {
+    fun findUidForConnection(protocol: String, localPort: Int, remoteIp: String = "", remotePort: Int = 0): Int {
+        // Try ConnectivityManager first for API 29+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && remoteIp.isNotEmpty() && remotePort > 0) {
+            val uid = resolveUidApi29(protocol, localPort, remoteIp, remotePort)
+            if (uid != -1) return uid
+        }
+
         try {
             val path = "/proc/net/${protocol.lowercase()}"
             val reader = BufferedReader(FileReader(path))
@@ -162,6 +170,27 @@ class AppResolver(private val context: Context) {
             Log.d(TAG, "Cannot read /proc/net: ${e.message}")
         }
         return -1
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.Q)
+    private fun resolveUidApi29(protocol: String, localPort: Int, remoteIp: String, remotePort: Int): Int {
+        try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return -1
+            
+            val proto = if (protocol.equals("tcp", ignoreCase = true)) 
+                OsConstants.IPPROTO_TCP 
+            else 
+                OsConstants.IPPROTO_UDP
+
+            val local = InetSocketAddress(localPort)
+            val remote = InetSocketAddress(remoteIp, remotePort)
+
+            return cm.getConnectionOwnerUid(proto, local, remote)
+        } catch (e: Exception) {
+            // Can fail if permission missing or connection closed
+            return -1
+        }
     }
 
     /**

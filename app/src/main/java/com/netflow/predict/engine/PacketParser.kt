@@ -42,15 +42,23 @@ object PacketParser {
      */
     fun parse(buffer: ByteBuffer, length: Int): ParsedPacket? {
         if (length < 20) return null
+        
+        try {
+            buffer.position(0)
+            // Ensure we don't read past limit
+            if (buffer.limit() < length) buffer.limit(length)
+            
+            val versionAndIhl = buffer.get(0).toInt() and 0xFF
+            val ipVersion = versionAndIhl shr 4
 
-        buffer.position(0)
-        val versionAndIhl = buffer.get(0).toInt() and 0xFF
-        val ipVersion = versionAndIhl shr 4
-
-        return when (ipVersion) {
-            4 -> parseIPv4(buffer, length)
-            6 -> parseIPv6(buffer, length)
-            else -> null
+            return when (ipVersion) {
+                4 -> parseIPv4(buffer, length)
+                6 -> parseIPv6(buffer, length)
+                else -> null
+            }
+        } catch (e: Exception) {
+            // Catch IndexOutOfBoundsException or others
+            return null
         }
     }
 

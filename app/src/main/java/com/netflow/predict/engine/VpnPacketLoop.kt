@@ -100,15 +100,25 @@ class VpnPacketLoop(
     }
 
     private suspend fun processPacket(buffer: ByteBuffer, length: Int) {
-        val packet = PacketParser.parse(buffer, length) ?: return
+        try {
+            // Safety check for buffer limits
+            if (length > buffer.capacity()) {
+                Log.w(TAG, "Packet length $length exceeds buffer capacity ${buffer.capacity()}")
+                return
+            }
 
-        // Determine if outbound (from device to network)
-        val isOutbound = isOutboundPacket(packet)
+            val packet = PacketParser.parse(buffer, length) ?: return
 
-        // Resolve the UID for this connection
+            // Determine if outbound (from device to network)
+            val isOutbound = isOutboundPacket(packet)
+
+            // Resolve the UID for this connection
         val protocol = if (packet.protocol == 6) "tcp" else "udp"
         val localPort = if (isOutbound) packet.srcPort else packet.dstPort
-        val uid = appResolver.findUidForConnection(protocol, localPort)
+        val remoteIp = if (isOutbound) packet.dstIp else packet.srcIp
+        val remotePort = if (isOutbound) packet.dstPort else packet.srcPort
+        
+        val uid = appResolver.findUidForConnection(protocol, localPort, remoteIp, remotePort)
 
         // Track the flow
         flowTracker.onPacket(packet, uid, isOutbound)
@@ -121,6 +131,9 @@ class VpnPacketLoop(
 
         // Forward the packet to the real network
         forwardPacket(buffer, length, packet, isOutbound)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error processing packet: ${e.message}", e)
+        }
     }
 
     private suspend fun handleDnsPacket(
