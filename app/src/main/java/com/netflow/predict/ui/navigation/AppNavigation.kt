@@ -16,6 +16,7 @@ import com.netflow.predict.ui.screens.live.LiveTrafficScreen
 import com.netflow.predict.ui.screens.onboarding.OnboardingScreen
 import com.netflow.predict.ui.screens.permissions.PermissionsScreen
 import com.netflow.predict.ui.screens.predictions.PredictionsScreen
+import com.netflow.predict.ui.screens.settings.PrivacyPolicyScreen
 import com.netflow.predict.ui.screens.settings.SettingsScreen
 import com.netflow.predict.ui.screens.splash.SplashScreen
 
@@ -126,7 +127,14 @@ fun AppNavigation(
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onNavigateToPermissions = { navController.navigate(Screen.Permissions.route) },
+                onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
                 navController          = navController
+            )
+        }
+
+        composable(Screen.PrivacyPolicy.route) {
+            PrivacyPolicyScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -134,6 +142,7 @@ fun AppNavigation(
             // Placeholder — full implementation in SettingsScreen nav graph
             SettingsScreen(
                 onNavigateToPermissions = { navController.navigate(Screen.Permissions.route) },
+                onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
                 navController          = navController
             )
         }

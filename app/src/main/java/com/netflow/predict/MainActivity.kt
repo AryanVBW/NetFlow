@@ -12,6 +12,11 @@ import com.netflow.predict.ui.navigation.AppNavigation
 import com.netflow.predict.ui.theme.NetFlowTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.netflow.predict.data.repository.SettingsRepository
+import javax.inject.Inject
+
 /**
  * Single-activity entry point.
  *
@@ -21,6 +26,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject lateinit var settingsRepository: SettingsRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -29,7 +36,10 @@ class MainActivity : ComponentActivity() {
         checkConsent()
 
         setContent {
-            NetFlowAppContent()
+            NetFlowTheme {
+                val navController = rememberNavController()
+                AppNavigation(navController = navController)
+            }
         }
     }
 
@@ -50,13 +60,5 @@ class MainActivity : ComponentActivity() {
                 .setCancelable(false)
                 .show()
         }
-    }
-}
-
-@Composable
-private fun NetFlowAppContent() {
-    NetFlowTheme {
-        val navController = rememberNavController()
-        AppNavigation(navController = navController)
     }
 }

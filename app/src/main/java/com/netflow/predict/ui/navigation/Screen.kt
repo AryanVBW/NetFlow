@@ -9,6 +9,7 @@ sealed class Screen(val route: String) {
     object Live         : Screen("live")
     object Apps         : Screen("apps")
     object Settings     : Screen("settings")
+    object PrivacyPolicy : Screen("privacy_policy")
     // Detail screens (with arguments)
     object Predictions  : Screen("predictions")
     object AppDetail    : Screen("app_detail/{packageName}") {

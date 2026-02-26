@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import com.netflow.predict.data.model.*
 import com.netflow.predict.data.repository.SettingsRepository
 import com.netflow.predict.data.repository.TrafficRepository
+import com.netflow.predict.ui.screens.settings.PrivacyPolicyScreen
 import com.netflow.predict.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -76,6 +77,7 @@ class SettingsViewModel @Inject constructor(
 @Composable
 fun SettingsScreen(
     onNavigateToPermissions: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit,
     navController: NavController,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -237,7 +239,8 @@ fun SettingsScreen(
                 SettingsClickableRow(
                     icon     = Icons.Filled.PrivacyTip,
                     title    = "Privacy policy",
-                    subtitle = "All data stays on your device."
+                    subtitle = "All data stays on your device.",
+                    onClick  = onNavigateToPrivacyPolicy
                 )
             }
         }
