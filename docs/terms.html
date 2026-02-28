@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service — NetFlow</title>
+    <meta name="description"
+        content="NetFlow Terms of Service. Review the conditions for using the NetFlow Android network monitoring application.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --brand: #3b82f6;
+            --brand-dark: #2563eb;
+            --brand-light: #93c5fd;
+            --brand-glow: rgba(59, 130, 246, 0.25);
+            --accent: #06b6d4;
+            --amber: #f59e0b;
+            --amber-bg: rgba(245, 158, 11, 0.08);
+            --amber-border: rgba(245, 158, 11, 0.28);
+
+            --bg: #0d1117;
+            --bg-card: #161b22;
+            --bg-card-hover: #1c2333;
+            --bg-sidebar: #0d1117;
+            --surface: #21262d;
+            --surface-hover: #2d333b;
+            --border: #30363d;
+            --border-subtle: #21262d;
+
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+
+            --sidebar-width: 272px;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            padding: 28px 16px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 36px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--brand), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px var(--brand-glow);
+            flex-shrink: 0;
+        }
+
+        .logo-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+
+        .logo-text {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .nav-section-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            padding: 0 12px;
+            margin: 8px 0 6px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            margin-bottom: 2px;
+        }
+
+        .nav-link svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .nav-link:hover {
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--brand-light);
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .sidebar-footer .nav-link {
+            font-size: 0.85rem;
+        }
+
+        /* MAIN */
+        .main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 60px 72px;
+            max-width: calc(var(--sidebar-width) + 900px);
+        }
+
+        /* PAGE HEADER */
+        .page-header {
+            margin-bottom: 48px;
+        }
+
+        .page-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1.15;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--text-primary) 40%, var(--brand-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .effective-date {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .contact-line {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .contact-line a {
+            color: var(--brand-light);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-line a:hover {
+            text-decoration: underline;
+        }
+
+        /* IMPORTANT BANNER */
+        .important-banner {
+            background: var(--amber-bg);
+            border: 1px solid var(--amber-border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 48px;
+        }
+
+        .important-banner .banner-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fbbf24;
+            margin-bottom: 8px;
+        }
+
+        .important-banner p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.7;
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 48px;
+        }
+
+        .toc-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .toc-list li {
+            padding: 0;
+            border: none;
+        }
+
+        .toc-list li::before {
+            display: none;
+        }
+
+        .toc-list a {
+            color: var(--text-secondary);
+            font-size: 0.87rem;
+            text-decoration: none;
+            transition: var(--transition);
+            display: block;
+            padding: 4px 0;
+        }
+
+        .toc-list a:hover {
+            color: var(--brand-light);
+        }
+
+        .toc-list .num {
+            color: var(--text-muted);
+            margin-right: 6px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* SECTIONS */
+        .section {
+            margin-bottom: 48px;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            scroll-margin-top: 80px;
+            margin-bottom: 18px;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+            margin-left: 8px;
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 22px 0 8px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        ul,
+        ol {
+            padding-left: 0;
+            list-style: none;
+            margin-bottom: 16px;
+        }
+
+        li {
+            color: var(--text-secondary);
+            font-size: 0.93rem;
+            line-height: 1.75;
+            padding: 6px 0 6px 24px;
+            position: relative;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        li::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--brand);
+        }
+
+        code {
+            background: var(--surface);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.87em;
+            color: var(--brand-light);
+            font-family: 'Courier New', monospace;
+        }
+
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        a {
+            color: var(--brand-light);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* RESTRICTED USES */
+        .restriction-grid {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 0;
+        }
+
+        .restriction-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+        }
+
+        .restriction-icon {
+            width: 26px;
+            height: 26px;
+            flex-shrink: 0;
+            margin-top: 1px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .restriction-icon svg {
+            width: 14px;
+            height: 14px;
+            stroke: #f87171;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .restriction-item p {
+            margin: 0;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+
+        /* DISCLAIMER BOX */
+        .disclaimer-box {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.22);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin-bottom: 16px;
+        }
+
+        .disclaimer-box p {
+            font-size: 0.9rem;
+            margin: 0;
+            color: var(--text-secondary);
+        }
+
+        .disclaimer-box strong {
+            color: #f87171;
+        }
+
+        /* MOBILE */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 58px;
+            background: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 999;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+        }
+
+        .menu-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
+
+        .overlay.visible {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .main {
+                padding: 50px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 8px 0 40px rgba(0, 0, 0, 0.5);
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 80px 20px 40px;
+                max-width: 100%;
+            }
+
+            .toc-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <div class="mobile-header">
+        <button class="menu-btn" onclick="toggleMenu()" aria-label="Toggle navigation">☰</button>
+        <span style="font-weight:700;color:var(--text-primary);font-size:1rem;">NetFlow</span>
+    </div>
+
+    <nav class="sidebar" id="sidebar" aria-label="Main Navigation">
+        <a href="index.html" class="logo-wrap">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+            </div>
+            <span class="logo-text">NetFlow</span>
+        </a>
+
+        <div class="nav-section-label">Documentation</div>
+        <a href="index.html" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            Overview
+        </a>
+        <a href="privacy-policy.html" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Privacy Policy
+        </a>
+        <a href="terms.html" class="nav-link active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            Terms of Service
+        </a>
+
+        <div class="sidebar-footer">
+            <a href="https://github.com/AryanVBW/NetFlow" class="nav-link" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path
+                        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                </svg>
+                View on GitHub ↗
+            </a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                </svg>
+                Legal Agreement
+            </div>
+            <h1>Terms of Service</h1>
+            <p class="effective-date">Effective Date: March 1, 2026 &nbsp;·&nbsp; Last updated: March 1, 2026</p>
+            <p class="contact-line">Questions? Contact us at <a href="mailto:aryanvbw@gmail.com">aryanvbw@gmail.com</a>
+            </p>
+        </div>
+
+        <!-- Important Banner -->
+        <div class="important-banner">
+            <div class="banner-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                Please Read Before Using
+            </div>
+            <p>By downloading, installing, or using the NetFlow application, you agree to be bound by these Terms of
+                Service. If you do not agree to any part of these Terms, you must not use the application. These Terms
+                form a legally binding agreement between you and the developer.</p>
+        </div>
+
+        <!-- Table of Contents -->
+        <div class="toc">
+            <div class="toc-title">Table of Contents</div>
+            <ol class="toc-list">
+                <li><a href="#acceptance"><span class="num">1.</span> Acceptance of Terms</a></li>
+                <li><a href="#description"><span class="num">2.</span> Description of Service</a></li>
+                <li><a href="#eligibility"><span class="num">3.</span> Eligibility</a></li>
+                <li><a href="#license"><span class="num">4.</span> License Grant</a></li>
+                <li><a href="#acceptable-use"><span class="num">5.</span> Acceptable Use</a></li>
+                <li><a href="#prohibited"><span class="num">6.</span> Prohibited Uses</a></li>
+                <li><a href="#disclaimer"><span class="num">7.</span> Disclaimer of Warranties</a></li>
+                <li><a href="#liability"><span class="num">8.</span> Limitation of Liability</a></li>
+                <li><a href="#privacy"><span class="num">9.</span> Privacy</a></li>
+                <li><a href="#open-source"><span class="num">10.</span> Open Source License</a></li>
+                <li><a href="#termination"><span class="num">11.</span> Termination</a></li>
+                <li><a href="#changes"><span class="num">12.</span> Changes to Terms</a></li>
+                <li><a href="#governing-law"><span class="num">13.</span> Governing Law</a></li>
+                <li><a href="#contact"><span class="num">14.</span> Contact Information</a></li>
+            </ol>
+        </div>
+
+        <!-- 1. Acceptance -->
+        <div class="section" id="acceptance">
+            <h2>1. Acceptance of Terms</h2>
+            <p>By accessing or using the NetFlow Android application ("the App," "the Service"), you confirm that you
+                have read, understood, and agree to be bound by these Terms of Service ("Terms"), our <a
+                    href="privacy-policy.html">Privacy Policy</a>, and all applicable laws and regulations. If you do
+                not agree, you are not authorized to use the App and must uninstall it immediately.</p>
+            <p>These Terms apply to all users of the App, including users who access it via the Google Play Store or by
+                installing the APK directly from the project's GitHub releases.</p>
+        </div>
+
+        <!-- 2. Description -->
+        <div class="section" id="description">
+            <h2>2. Description of Service</h2>
+            <p>NetFlow is a free, open-source Android application that provides the following functionality, all
+                performed exclusively on-device:</p>
+            <ul>
+                <li><strong>Local VPN Proxy:</strong> Uses the Android <code>VpnService</code> API to act as a local
+                    transparent proxy, capturing and analyzing network traffic metadata (connection headers, IP
+                    addresses, ports, byte counts) without decrypting TLS payloads or routing traffic to external
+                    servers.</li>
+                <li><strong>Per-App Traffic Analytics:</strong> Maps network connections to specific installed
+                    applications using Linux network socket UID mapping.</li>
+                <li><strong>Risk Prediction:</strong> Scores connections against a locally stored list of known
+                    malicious hosts, suspicious port patterns, and tracker endpoints.</li>
+                <li><strong>Ad & Tracker Blocking:</strong> Intercepts and blocks DNS requests and TCP connections to
+                    endpoints on a locally maintained blocklist.</li>
+                <li><strong>Bandwidth Monitoring:</strong> Displays real-time and historical data usage statistics per
+                    application.</li>
+            </ul>
+            <p>NetFlow does not operate any backend servers, collect user data, or route user traffic through remote
+                infrastructure. All processing is performed in memory on the local device and discarded after use.</p>
+        </div>
+
+        <!-- 3. Eligibility -->
+        <div class="section" id="eligibility">
+            <h2>3. Eligibility</h2>
+            <p>You must be at least 13 years of age to use this App. If you are under the age of 18, you represent that
+                you have your parent's or legal guardian's permission to use the App and that they have read and agreed
+                to these Terms on your behalf.</p>
+            <p>By using the App, you represent and warrant that you have the legal capacity to enter into these Terms in
+                your jurisdiction and that your use of the App does not violate any applicable law.</p>
+        </div>
+
+        <!-- 4. License -->
+        <div class="section" id="license">
+            <h2>4. License Grant</h2>
+            <p>Subject to your compliance with these Terms, we grant you a limited, non-exclusive, non-transferable,
+                revocable, royalty-free license to:</p>
+            <ul>
+                <li>Download, install, and use the App on Android devices that you own or control</li>
+                <li>Access and review the source code pursuant to the applicable open-source license (see Section 10)
+                </li>
+            </ul>
+            <p>This license does not include the right to sublicense, sell, resell, transfer, assign, or otherwise
+                commercially exploit the App unless permitted by the applicable open-source license.</p>
+        </div>
+
+        <!-- 5. Acceptable Use -->
+        <div class="section" id="acceptable-use">
+            <h2>5. Acceptable Use</h2>
+            <p>You agree to use NetFlow only for lawful purposes and in a manner consistent with these Terms.
+                Specifically, you agree that:</p>
+            <ul>
+                <li>NetFlow is designed to monitor network traffic on <strong>your own device exclusively</strong>. You
+                    must not use it to intercept, monitor, or analyze network traffic of other individuals without their
+                    express lawful consent.</li>
+                <li>You are solely responsible for ensuring your use of the App complies with all applicable local,
+                    national, and international laws, including computer fraud and network security laws.</li>
+                <li>You will not use the App in any jurisdiction where its use would be unlawful.</li>
+                <li>You acknowledge that the risk prediction feature is algorithm-based and <strong>should not be relied
+                        upon as the sole or definitive measure of network security</strong>.</li>
+            </ul>
+        </div>
+
+        <!-- 6. Prohibited -->
+        <div class="section" id="prohibited">
+            <h2>6. Prohibited Uses</h2>
+            <p>You must not use NetFlow to:</p>
+            <div class="restriction-grid">
+                <div class="restriction-item">
+                    <span class="restriction-icon"><svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg></span>
+                    <p>Intercept, monitor, or analyze the network traffic of another person's device without their
+                        explicit consent — doing so may constitute a criminal offense under computer fraud and
+                        wiretapping laws.</p>
+                </div>
+                <div class="restriction-item">
+                    <span class="restriction-icon"><svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg></span>
+                    <p>Bypass lawful network filtering or security controls enforced by schools, employers, or network
+                        operators on networks they own or manage.</p>
+                </div>
+                <div class="restriction-item">
+                    <span class="restriction-icon"><svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg></span>
+                    <p>Engage in any activity that constitutes unauthorized access to a computer system or network, as
+                        defined by applicable cybercrime laws.</p>
+                </div>
+                <div class="restriction-item">
+                    <span class="restriction-icon"><svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg></span>
+                    <p>Reverse-engineer, decompile, or disassemble the App for purposes that exceed those permitted by
+                        the applicable open-source license or applicable law.</p>
+                </div>
+                <div class="restriction-item">
+                    <span class="restriction-icon"><svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg></span>
+                    <p>Use the App to facilitate the development of malware, spyware, surveillance software, or any tool
+                        intended to violate another person's privacy.</p>
+                </div>
+                <div class="restriction-item">
+                    <span class="restriction-icon"><svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg></span>
+                    <p>Distribute modified versions of the App that misrepresent its functionality, remove required
+                        open-source license attributions, or otherwise violate the applicable open-source license terms.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Disclaimer -->
+        <div class="section" id="disclaimer">
+            <h2>7. Disclaimer of Warranties</h2>
+            <div class="disclaimer-box">
+                <p><strong>THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND.</strong> To
+                    the fullest extent permitted by applicable law, we disclaim all warranties, express or implied,
+                    including but not limited to implied warranties of merchantability, fitness for a particular
+                    purpose, title, and non-infringement.</p>
+            </div>
+            <p>We do not warrant that:</p>
+            <ul>
+                <li>The App will be uninterrupted, error-free, or free of harmful components</li>
+                <li>The risk prediction and threat detection features will identify all security threats or provide
+                    complete protection</li>
+                <li>The App will be compatible with all Android device configurations or future Android OS versions</li>
+                <li>Any defects in the App will be corrected</li>
+            </ul>
+            <p>The App is a developer tool intended for technical users who understand the nature of on-device network
+                monitoring. It is not a substitute for professional cybersecurity software, firewalls, antivirus
+                programs, or legal advice.</p>
+        </div>
+
+        <!-- 8. Liability -->
+        <div class="section" id="liability">
+            <h2>8. Limitation of Liability</h2>
+            <div class="disclaimer-box">
+                <p><strong>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE DEVELOPER OF NETFLOW
+                        BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE
+                        DAMAGES</strong>, including but not limited to loss of profits, revenue, data, goodwill, or
+                    other intangible losses, arising out of or related to your use of or inability to use the App.</p>
+            </div>
+            <p>In no event shall our total cumulative liability to you for all claims arising from or related to the App
+                exceed the amount you paid to download the App (which, as the App is free, is zero).</p>
+            <p>Some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages, so
+                the above limitation may not apply to you.</p>
+        </div>
+
+        <!-- 9. Privacy -->
+        <div class="section" id="privacy">
+            <h2>9. Privacy</h2>
+            <p>Your use of the App is also governed by our <a href="privacy-policy.html">Privacy Policy</a>, which is
+                incorporated into these Terms by reference. Our Privacy Policy explains how the App processes data
+                locally on your device and confirms that we do not collect personal data.</p>
+            <p>By using the App, you acknowledge and agree to the data practices described in the Privacy Policy.</p>
+        </div>
+
+        <!-- 10. Open Source -->
+        <div class="section" id="open-source">
+            <h2>10. Open Source License</h2>
+            <p>NetFlow is open-source software. The source code is available on GitHub and is licensed under the terms
+                found in the project repository's <code>LICENSE</code> file. Please review the applicable license before
+                forking, modifying, or redistributing the software.</p>
+            <p>
+                <strong>Source Code Repository:</strong><br>
+                <a href="https://github.com/AryanVBW/NetFlow" target="_blank"
+                    rel="noopener">https://github.com/AryanVBW/NetFlow</a>
+            </p>
+            <p>Nothing in these Terms shall restrict your rights under the applicable open-source license beyond those
+                restrictions permitted by that license.</p>
+        </div>
+
+        <!-- 11. Termination -->
+        <div class="section" id="termination">
+            <h2>11. Termination</h2>
+            <p>We reserve the right to terminate or restrict your access to the App at any time if you violate these
+                Terms. Because the App is installed locally on your device, "termination" in practice means that you
+                must cease use and uninstall the application.</p>
+            <p>You may terminate these Terms at any time by uninstalling the App from your device. Upon termination, the
+                license granted to you under Section 4 ceases immediately.</p>
+            <p>Sections 7 (Disclaimer), 8 (Limitation of Liability), and 13 (Governing Law) shall survive any
+                termination.</p>
+        </div>
+
+        <!-- 12. Changes -->
+        <div class="section" id="changes">
+            <h2>12. Changes to Terms</h2>
+            <p>We reserve the right to modify these Terms of Service at any time. Material changes will be communicated
+                by updating the "Last updated" date at the top of this page and, where appropriate, through an in-app
+                notification or GitHub release notes.</p>
+            <p>Your continued use of the App after any changes to these Terms constitutes your acceptance of the new
+                Terms. If you do not agree to the revised Terms, you must stop using the App and uninstall it.</p>
+        </div>
+
+        <!-- 13. Governing Law -->
+        <div class="section" id="governing-law">
+            <h2>13. Governing Law & Dispute Resolution</h2>
+            <p>These Terms are governed by and construed in accordance with the laws of India, without regard to its
+                conflict of law provisions. Any disputes arising out of or in connection with these Terms or the App
+                shall be subject to the exclusive jurisdiction of the competent courts of India.</p>
+            <p>If any provision of these Terms is found to be unenforceable or invalid under applicable law, that
+                provision will be limited or eliminated to the minimum extent necessary, and the remaining provisions
+                will continue in full force and effect.</p>
+        </div>
+
+        <!-- 14. Contact -->
+        <div class="section" id="contact">
+            <h2>14. Contact Information</h2>
+            <p>If you have any questions, concerns, or requests regarding these Terms of Service, please contact:</p>
+            <p>
+                <strong>Developer:</strong> AryanVBW<br>
+                <strong>Email:</strong> <a href="mailto:aryanvbw@gmail.com">aryanvbw@gmail.com</a><br>
+                <strong>GitHub:</strong> <a href="https://github.com/AryanVBW/NetFlow" target="_blank"
+                    rel="noopener">github.com/AryanVBW/NetFlow</a>
+            </p>
+            <p>We will endeavor to respond to all legal inquiries within 30 business days.</p>
+        </div>
+
+    </main>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('visible');
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('visible');
+        }
+    </script>
+</body>
+
+</html>

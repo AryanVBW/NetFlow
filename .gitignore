@@ -38,9 +38,13 @@ captures/
 *.iml
 .idea/
 
-# Keystore files (uncomment to include)
-# *.jks
-# *.keystore
+# Keystore files
+*.jks
+*.keystore
+netflow-release.keystore
+
+# Keystore secret properties
+keystore.properties
 
 # External native build folder generated in Android Studio 2.2 and later
 .cxx/

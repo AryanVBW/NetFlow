@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — NetFlow</title>
+    <meta name="description"
+        content="NetFlow Privacy Policy. We are committed to no data collection. All network analysis is performed locally on your device and never transmitted externally.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --brand: #3b82f6;
+            --brand-dark: #2563eb;
+            --brand-light: #93c5fd;
+            --brand-glow: rgba(59, 130, 246, 0.25);
+            --accent: #06b6d4;
+            --green: #22c55e;
+            --green-bg: rgba(34, 197, 94, 0.08);
+            --green-border: rgba(34, 197, 94, 0.25);
+            --amber: #f59e0b;
+            --amber-bg: rgba(245, 158, 11, 0.08);
+            --amber-border: rgba(245, 158, 11, 0.25);
+            --red: #ef4444;
+
+            --bg: #0d1117;
+            --bg-card: #161b22;
+            --bg-card-hover: #1c2333;
+            --bg-sidebar: #0d1117;
+            --surface: #21262d;
+            --surface-hover: #2d333b;
+            --border: #30363d;
+            --border-subtle: #21262d;
+
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+
+            --sidebar-width: 272px;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            padding: 28px 16px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 36px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--brand), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px var(--brand-glow);
+            flex-shrink: 0;
+        }
+
+        .logo-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+
+        .logo-text {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .nav-section-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            padding: 0 12px;
+            margin: 8px 0 6px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            margin-bottom: 2px;
+        }
+
+        .nav-link svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .nav-link:hover {
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--brand-light);
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .sidebar-footer .nav-link {
+            font-size: 0.85rem;
+        }
+
+        /* MAIN */
+        .main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 60px 72px;
+            max-width: calc(var(--sidebar-width) + 900px);
+        }
+
+        /* PAGE HEADER */
+        .page-header {
+            margin-bottom: 48px;
+        }
+
+        .page-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #4ade80;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1.15;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--text-primary) 40%, var(--brand-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .effective-date {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .contact-line {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .contact-line a {
+            color: var(--brand-light);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-line a:hover {
+            text-decoration: underline;
+        }
+
+        /* TLDR BANNER */
+        .tldr-banner {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.04));
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-bottom: 48px;
+        }
+
+        .tldr-banner .tldr-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #4ade80;
+            margin-bottom: 10px;
+        }
+
+        .tldr-banner p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.75;
+        }
+
+        .tldr-banner strong {
+            color: #4ade80;
+        }
+
+        /* SECTIONS */
+        .section {
+            margin-bottom: 48px;
+        }
+
+        h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+            margin-left: 8px;
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 24px 0 8px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        ul,
+        ol {
+            padding-left: 0;
+            list-style: none;
+            margin-bottom: 16px;
+        }
+
+        li {
+            color: var(--text-secondary);
+            font-size: 0.93rem;
+            line-height: 1.75;
+            padding: 6px 0 6px 24px;
+            position: relative;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        li::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--brand);
+        }
+
+        code {
+            background: var(--surface);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.87em;
+            color: var(--brand-light);
+            font-family: 'Courier New', monospace;
+        }
+
+        a {
+            color: var(--brand-light);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* PERMISSION CARDS */
+        .permission-cards {
+            display: grid;
+            gap: 12px;
+        }
+
+        .permission-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 18px 20px;
+            transition: var(--transition);
+        }
+
+        .permission-card:hover {
+            border-color: var(--brand);
+        }
+
+        .permission-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .permission-tag {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--brand-light);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-family: monospace;
+            letter-spacing: 0.02em;
+        }
+
+        .permission-card h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .permission-card p {
+            margin: 0;
+            font-size: 0.87rem;
+            color: var(--text-secondary);
+        }
+
+        /* NOT COLLECTED TABLE */
+        .not-collected-list {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .nc-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .nc-row:last-child {
+            border-bottom: none;
+        }
+
+        .nc-badge {
+            background: var(--green-bg);
+            border: 1px solid var(--green-border);
+            color: #4ade80;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .nc-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* MOBILE */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 58px;
+            background: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 999;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+        }
+
+        .menu-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
+
+        .overlay.visible {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .main {
+                padding: 50px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 8px 0 40px rgba(0, 0, 0, 0.5);
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 80px 20px 40px;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <div class="mobile-header">
+        <button class="menu-btn" onclick="toggleMenu()" aria-label="Toggle navigation">☰</button>
+        <span style="font-weight:700;color:var(--text-primary);font-size:1rem;">NetFlow</span>
+    </div>
+
+    <nav class="sidebar" id="sidebar" aria-label="Main Navigation">
+        <a href="index.html" class="logo-wrap">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+            </div>
+            <span class="logo-text">NetFlow</span>
+        </a>
+
+        <div class="nav-section-label">Documentation</div>
+        <a href="index.html" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            Overview
+        </a>
+        <a href="privacy-policy.html" class="nav-link active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Privacy Policy
+        </a>
+        <a href="terms.html" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            Terms of Service
+        </a>
+
+        <div class="sidebar-footer">
+            <a href="https://github.com/AryanVBW/NetFlow" class="nav-link" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path
+                        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                </svg>
+                View on GitHub ↗
+            </a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Privacy First
+            </div>
+            <h1>Privacy Policy</h1>
+            <p class="effective-date">Effective Date: March 1, 2026</p>
+            <p class="contact-line">Questions? Contact us at <a href="mailto:aryanvbw@gmail.com">aryanvbw@gmail.com</a>
+            </p>
+        </div>
+
+        <!-- TL;DR Callout -->
+        <div class="tldr-banner">
+            <div class="tldr-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12l5 5L19 7" />
+                </svg>
+                The Short Version
+            </div>
+            <p>NetFlow is an <strong>open-source, local-only</strong> Android application. We <strong>do not collect,
+                    store, or transmit</strong> your personal data, network traffic, browsing history, or any personally
+                identifiable information. <strong>All processing happens exclusively on your device.</strong> We have no
+                backend servers. We cannot see your data because we never receive it.</p>
+        </div>
+
+        <!-- 1. Overview -->
+        <div class="section">
+            <h2>1. Overview & Scope</h2>
+            <p>This Privacy Policy applies to the NetFlow Android application ("the App"), published by Aryan Vivek
+                Bhardwaj ("we," "us," or "our"). It explains how the App handles data in connection with its core
+                functionality as a local, on-device network traffic monitor.</p>
+            <p>This policy is designed to meet the requirements of the Google Play Store Developer Program Policies,
+                including the User Data policy, as well as applicable data protection regulations including GDPR and
+                CCPA.</p>
+        </div>
+
+        <!-- 2. Data We Do NOT Collect -->
+        <div class="section">
+            <h2>2. Data We Do Not Collect</h2>
+            <p>NetFlow operates entirely on your local device. We do not operate any backend infrastructure for data
+                collection. We <strong>never collect, track, process externally, or share</strong>:</p>
+            <div class="not-collected-list">
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">Your IP address or
+                        network identity</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">Your browsing
+                        history, visited URLs, or DNS query contents</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">The content
+                        (payload) of any network packets</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">Your physical or
+                        approximate GPS location</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">Personally
+                        Identifiable Information (PII) of any kind</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">Device identifiers
+                        (IMEI, Android ID, Advertising ID)</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">A list of installed
+                        applications</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">Authentication
+                        credentials or session tokens</span></div>
+                <div class="nc-row"><span class="nc-badge">NOT COLLECTED</span><span class="nc-text">Crash reports,
+                        analytics, or usage telemetry</span></div>
+            </div>
+        </div>
+
+        <!-- 3. Data Processed Locally -->
+        <div class="section">
+            <h2>3. Data Processed Locally On-Device</h2>
+            <p>To deliver its core features, NetFlow processes certain data <strong>strictly on your device, in memory
+                    only</strong>. This data is never written to persistent external storage and never transmitted off
+                your device.</p>
+
+            <div class="permission-cards">
+                <div class="permission-card">
+                    <div class="permission-card-header">
+                        <span class="permission-tag">VpnService</span>
+                        <h3>Local Network Traffic Interception</h3>
+                    </div>
+                    <p>NetFlow uses the Android <code>VpnService</code> API to establish a local loopback VPN tunnel.
+                        This intercepts TCP and UDP connection metadata (destination IP, port, protocol, and byte
+                        counts) to provide per-app traffic statistics and risk scoring. <strong>We do not forward your
+                            traffic to any remote proxy server. We do not decrypt TLS/SSL-encrypted payloads.</strong>
+                        All data is processed in-memory in real time and discarded immediately after display.</p>
+                </div>
+
+                <div class="permission-card">
+                    <div class="permission-card-header">
+                        <span class="permission-tag">QUERY_ALL_PACKAGES</span>
+                        <h3>Installed Application Mapping</h3>
+                    </div>
+                    <p>NetFlow requires the <code>QUERY_ALL_PACKAGES</code> permission to attribute each network
+                        connection to the specific application that initiated it (by mapping the UID of the connection
+                        to a package name). This is essential to the core functionality of showing per-app network
+                        activity. <strong>This list of applications is used exclusively for on-screen display and is
+                            never transmitted off your device, stored to disk, or shared with third parties.</strong>
+                    </p>
+                </div>
+
+                <div class="permission-card">
+                    <div class="permission-card-header">
+                        <span class="permission-tag">INTERNET</span>
+                        <h3>Network Access</h3>
+                    </div>
+                    <p>The standard Internet permission is required by the VpnService infrastructure and for checking
+                        update availability from the public GitHub Releases page. No personal data is attached to any
+                        such requests.</p>
+                </div>
+
+                <div class="permission-card">
+                    <div class="permission-card-header">
+                        <span class="permission-tag">RECEIVE_BOOT_COMPLETED</span>
+                        <h3>Auto-start on Boot (Optional)</h3>
+                    </div>
+                    <p>If enabled by the user, this permission allows the monitoring service to resume automatically
+                        after a device reboot. This feature is opt-in and can be disabled in Settings at any time.</p>
+                </div>
+
+                <div class="permission-card">
+                    <div class="permission-card-header">
+                        <span class="permission-tag">FOREGROUND_SERVICE</span>
+                        <h3>Background Service</h3>
+                    </div>
+                    <p>To monitor traffic continuously when the app is not in the foreground, NetFlow runs as an Android
+                        Foreground Service with a persistent notification. This is required by Android OS policy for
+                        apps that perform ongoing background work. User can stop the service at any time from the
+                        notification or app UI.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Third-Party Services -->
+        <div class="section">
+            <h2>4. Third-Party Services & SDKs</h2>
+            <p>NetFlow does <strong>not</strong> integrate any third-party analytics SDKs (e.g., Firebase Analytics,
+                Crashlytics, Mixpanel), advertising SDKs, or social login providers. The App has no embedded third-party
+                trackers.</p>
+            <p>The App may connect to the public GitHub API (<a href="https://api.github.com" target="_blank"
+                    rel="noopener">api.github.com</a>) solely to check for new release versions. This request does not
+                include any personal or device data beyond a standard HTTP request.</p>
+        </div>
+
+        <!-- 5. Open Source Transparency -->
+        <div class="section">
+            <h2>5. Open Source Transparency</h2>
+            <p>We believe that a privacy tool must be verifiable. NetFlow's entire source code is publicly available on
+                GitHub under an open-source license. You can inspect every aspect of how the App handles data —
+                including the VPN implementation, permission usage, and network calls — and verify the claims in this
+                Privacy Policy:</p>
+            <p><strong>Source Code:</strong> <a href="https://github.com/AryanVBW/NetFlow" target="_blank"
+                    rel="noopener">https://github.com/AryanVBW/NetFlow</a></p>
+        </div>
+
+        <!-- 6. Data Security -->
+        <div class="section">
+            <h2>6. Data Security</h2>
+            <p>Because no personal data is transmitted to or stored by us, the risk of a server-side data breach
+                affecting your information is zero. All data processed by NetFlow remains exclusively within the Android
+                OS security sandbox on your device, subject to Android's standard application isolation model.</p>
+        </div>
+
+        <!-- 7. Children's Privacy -->
+        <div class="section">
+            <h2>7. Children's Privacy</h2>
+            <p>NetFlow is not directed at children under the age of 13 (or the equivalent minimum digital age in your
+                jurisdiction). We do not knowingly collect any information from children. Because we do not collect any
+                user data whatsoever, there is no specific risk relating to children's data from the use of this App.
+            </p>
+        </div>
+
+        <!-- 8. User Rights -->
+        <div class="section">
+            <h2>8. Your Rights & Data Deletion</h2>
+            <p>Because NetFlow does not collect or store your personal data on any external server, there is no personal
+                data held by us that could be subject to a deletion or access request. All data the App uses is
+                processed exclusively on your device and can be cleared at any time by:</p>
+            <ul>
+                <li>Clearing the App's data via Android Settings → Apps → NetFlow → Clear Data</li>
+                <li>Uninstalling the application</li>
+            </ul>
+            <p>If you are a resident of the European Economic Area (EEA), California, or another jurisdiction with
+                specific privacy rights, you may contact us at <a
+                    href="mailto:aryanvbw@gmail.com">aryanvbw@gmail.com</a> with any privacy-related requests. We will
+                respond within 30 days.</p>
+        </div>
+
+        <!-- 9. Changes to this Policy -->
+        <div class="section">
+            <h2>9. Changes to This Privacy Policy</h2>
+            <p>We may update this Privacy Policy to reflect changes in the App's functionality, applicable legal
+                requirements, or Google Play policies. When we do, we will update the "Effective Date" at the top of
+                this page and, where appropriate, notify users via an in-app notice or GitHub release notes. Continued
+                use of the App after a policy update constitutes your acceptance of the revised policy.</p>
+        </div>
+
+        <!-- 10. Contact -->
+        <div class="section">
+            <h2>10. Contact Us</h2>
+            <p>For any questions, concerns, or requests regarding this Privacy Policy, please contact:</p>
+            <p>
+                <strong>Developer:</strong> AryanVBW<br>
+                <strong>Email:</strong> <a href="mailto:aryanvbw@gmail.com">aryanvbw@gmail.com</a><br>
+                <strong>GitHub:</strong> <a href="https://github.com/AryanVBW/NetFlow" target="_blank"
+                    rel="noopener">github.com/AryanVBW/NetFlow</a>
+            </p>
+        </div>
+
+    </main>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('visible');
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('visible');
+        }
+    </script>
+</body>
+
+</html>
