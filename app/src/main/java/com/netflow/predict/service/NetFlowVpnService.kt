@@ -142,8 +142,13 @@ class NetFlowVpnService : VpnService() {
             //   - All other traffic bypasses the TUN natively via allowBypass().
             //   - Lightweight mode for DNS monitoring only.
             //
-            val dnsOnly = kotlinx.coroutines.runBlocking {
-                settingsRepository.settings.first().dnsOnlyMode
+            val dnsOnly = try {
+                kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                    settingsRepository.settings.first().dnsOnlyMode
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not read DNS-only setting, defaulting to false", e)
+                false
             }
 
             val builder = Builder()

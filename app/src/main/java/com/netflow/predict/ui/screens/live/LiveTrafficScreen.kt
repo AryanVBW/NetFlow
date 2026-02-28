@@ -92,12 +92,16 @@ fun LiveTrafficScreen(
                 if (flows.isEmpty()) {
                     EmptyTrafficState()
                 } else {
+                    // Deduplicate by id to guard against duplicate-key crash
+                    // (can happen with IPv6 multicast flows when the same 5-tuple
+                    // appears in back-to-back emissions before eviction).
+                    val uniqueFlows = remember(flows) { flows.distinctBy { it.id } }
                     LazyColumn(
                         modifier            = Modifier.fillMaxSize(),
                         contentPadding      = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
-                        items(flows, key = { it.id }) { flow ->
+                        items(uniqueFlows, key = { it.id }) { flow ->
                             AnimatedVisibility(
                                 visible = true,
                                 enter   = fadeIn() + slideInVertically()

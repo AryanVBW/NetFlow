@@ -34,12 +34,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Check for first run consent
-        checkConsent()
-
         setContent {
-            // Collect settings from DataStore as Compose State.
-            // This ensures recomposition whenever the user changes theme in Settings.
             val settings by settingsRepository.settings
                 .collectAsState(initial = AppSettings())
 
@@ -48,6 +43,9 @@ class MainActivity : ComponentActivity() {
                 AppNavigation(navController = navController)
             }
         }
+
+        // Show consent dialog after window is fully attached to avoid crashes
+        window.decorView.post { checkConsent() }
     }
 
     private fun checkConsent() {
