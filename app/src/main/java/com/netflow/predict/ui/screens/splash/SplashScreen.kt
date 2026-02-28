@@ -1,5 +1,7 @@
 package com.netflow.predict.ui.screens.splash
 
+import android.content.Context
+import android.net.VpnService
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,6 +19,7 @@ import androidx.lifecycle.ViewModel
 import com.netflow.predict.data.repository.SettingsRepository
 import com.netflow.predict.ui.components.ShieldLogoAnimated
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -25,18 +28,30 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val settingsRepo: SettingsRepository
 ) : ViewModel() {
 
-    /** Read actual state from DataStore (suspending, called once from LaunchedEffect). */
+    /**
+     * Resolve the start destination.
+     *
+     * VPN permission is checked via the real Android API
+     * (VpnService.prepare() returns null when already granted).
+     * We also sync that result back to DataStore so future reads stay accurate.
+     */
     suspend fun resolveDestination(): SplashDestination {
         val isFirstRun = settingsRepo.isFirstRun.first()
-        val vpnGranted = settingsRepo.vpnPermissionGranted.first()
-        return when {
-            isFirstRun  -> SplashDestination.ONBOARDING
-            !vpnGranted -> SplashDestination.PERMISSIONS
-            else        -> SplashDestination.HOME
+        if (isFirstRun) return SplashDestination.ONBOARDING
+
+        // Check the real Android VPN permission — never rely solely on our stored flag.
+        val vpnAlreadyPrepared = VpnService.prepare(context) == null
+        if (vpnAlreadyPrepared) {
+            // Sync DataStore so the flag reflects reality.
+            settingsRepo.setVpnPermissionGranted(true)
         }
+
+        return if (vpnAlreadyPrepared) SplashDestination.HOME
+               else SplashDestination.PERMISSIONS
     }
 }
 

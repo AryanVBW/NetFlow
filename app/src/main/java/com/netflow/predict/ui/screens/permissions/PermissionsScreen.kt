@@ -1,8 +1,13 @@
 package com.netflow.predict.ui.screens.permissions
 
 import android.app.Activity
+import android.app.AppOpsManager
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
+import android.os.Process
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -23,7 +28,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.netflow.predict.data.repository.SettingsRepository
 import com.netflow.predict.ui.theme.*
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 // ── Permission step state ─────────────────────────────────────────────────────
 
@@ -38,13 +51,61 @@ data class PermissionStep(
     var state: PermissionState = PermissionState.PENDING
 )
 
+// ── ViewModel ─────────────────────────────────────────────────────────────────
+
+@HiltViewModel
+class PermissionsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val settingsRepo: SettingsRepository
+) : ViewModel() {
+
+    /** Persist VPN granted state so Splash can route correctly next launch. */
+    fun onVpnGranted() {
+        viewModelScope.launch {
+            settingsRepo.setVpnPermissionGranted(true)
+        }
+    }
+
+    /** True if the OS considers VPN permission already prepared. */
+    fun isVpnAlreadyGranted(): Boolean = VpnService.prepare(context) == null
+
+    /** True if POST_NOTIFICATIONS is already granted (Android 13+). */
+    fun isNotificationGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= 33) {
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        } else true  // not required below Android 13
+    }
+
+    /** True if Usage Access (PACKAGE_USAGE_STATS) is allowed. */
+    fun isUsageAccessGranted(): Boolean {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= 29) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                context.packageName
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                context.packageName
+            )
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PermissionsScreen(
     onProtectionStarted: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: PermissionsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 
@@ -55,12 +116,23 @@ fun PermissionsScreen(
     var showVpnSheet     by remember { mutableStateOf(false) }
     var isStartingVpn    by remember { mutableStateOf(false) }
 
+    // Pre-populate states based on real OS permission status on first composition.
+    LaunchedEffect(Unit) {
+        if (viewModel.isVpnAlreadyGranted())     vpnState   = PermissionState.GRANTED
+        if (viewModel.isNotificationGranted())   notifState = PermissionState.GRANTED
+        if (viewModel.isUsageAccessGranted())    usageState = PermissionState.GRANTED
+    }
+
     // VPN permission launcher
     val vpnLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        vpnState = if (result.resultCode == Activity.RESULT_OK) PermissionState.GRANTED
-                   else PermissionState.DENIED
+        if (result.resultCode == Activity.RESULT_OK) {
+            vpnState = PermissionState.GRANTED
+            viewModel.onVpnGranted()   // persist so Splash routes to Home next launch
+        } else {
+            vpnState = PermissionState.DENIED
+        }
     }
 
     // Notification permission launcher (Android 13+)
